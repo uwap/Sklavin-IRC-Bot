@@ -1,5 +1,6 @@
 module IRC.Proto where
 
+import IRC.Connection
 import Data.List (isPrefixOf)
 
 newtype Nick = Nick String
@@ -15,7 +16,7 @@ parseUserHost s = (nick s, name s, host s)
 
 newtype Prefix   = Prefix String
 newtype Command  = Command String
-type Params      = [String]
+type    Params   = [String]
 
 {--
  RFC2812 defines a message as
@@ -59,3 +60,6 @@ parseParams s = filter (not . null) $ parseMiddles s ++ (parseTrailing s : [])
 {--------------------------------------------------------------}
 {------------------------ User Commands -----------------------}
 {--------------------------------------------------------------}
+
+ucAway :: Maybe String -> IRC ()
+ucAway _ = return ()
