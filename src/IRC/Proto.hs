@@ -2,6 +2,11 @@ module IRC.Proto where
 
 import IRC.Connection
 import Data.List (isPrefixOf)
+import Data.Foldable (toList)
+
+{--------------------------------------------------------------}
+{--------------------------- Parsing --------------------------}
+{--------------------------------------------------------------}
 
 newtype Nick = Nick String
 newtype Name = Name String
@@ -61,5 +66,14 @@ parseParams s = filter (not . null) $ parseMiddles s ++ (parseTrailing s : [])
 {------------------------ User Commands -----------------------}
 {--------------------------------------------------------------}
 
+newtype Channel = Channel String
+
+performUserCommand :: Command -> Params -> Maybe String -> IRC ()
+performUserCommand (Command c) middles Nothing = write $ c ++ " " ++ unwords middles
+performUserCommand (Command c) middles (Just trailing) = write $ c ++ " " ++ unwords middles ++ " :" ++ trailing
+
 ucAway :: Maybe String -> IRC ()
-ucAway _ = return ()
+ucAway message = performUserCommand (Command "AWAY") (toList message) Nothing
+
+ucInvite :: Nick -> Channel -> IRC ()
+ucInvite (Nick n) (Channel c) = performUserCommand (Command "INVITE") [n, c] Nothing
