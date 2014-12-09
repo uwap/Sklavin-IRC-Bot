@@ -2,20 +2,20 @@ module IRC.Proto where
 
 import Data.List (isPrefixOf)
 
-type Nick = String
-type Name = String
-type Host = String
+newtype Nick = Nick String
+newtype Name = Name String
+newtype Host = Host String
 
 parseUserHost :: String -> (Nick, Name, Host)
 parseUserHost s = (nick s, name s, host s)
   where
-    nick = takeWhile (/= '!') . drop 1
-    name = takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
-    host = drop 1 . dropWhile (/= '@')
+    nick = Nick . takeWhile (/= '!') . drop 1
+    name = Name . takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
+    host = Host . drop 1 . dropWhile (/= '@')
 
-type Prefix   = String
-type Command  = String
-type Params   = [String]
+newtype Prefix   = Prefix String
+newtype Command  = Command String
+type Params      = [String]
 
 {--
  RFC2812 defines a message as
@@ -26,8 +26,8 @@ parseCommand :: String -> Maybe (Prefix, Command, Params)
 parseCommand (':':_) = Nothing
 parseCommand s       = Just (source s, command s, params s)
                   where
-                     source   = takeWhile (/= ' ') . drop 1
-                     command  = takeWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
+                     source   = Prefix . takeWhile (/= ' ') . drop 1
+                     command  = Command . takeWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
                      params   = parseParams . dropWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
                
 {--
@@ -55,3 +55,7 @@ parseParams s = filter (not . null) $ parseMiddles s ++ (parseTrailing s : [])
                         take 14 middles ++ (return . unwords) (drop 14 middles)
               parseMiddles'  = words . takeWhile (/= ':')
               parseTrailing  = drop 1 . dropWhile (/= ':')
+              
+{--------------------------------------------------------------}
+{------------------------ User Commands -----------------------}
+{--------------------------------------------------------------}
