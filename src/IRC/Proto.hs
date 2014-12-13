@@ -1,6 +1,5 @@
 module IRC.Proto where
 
-import IRC.Connection
 import Data.List (isPrefixOf)
 import Data.Foldable (toList)
 
@@ -68,12 +67,19 @@ parseParams s = filter (not . null) $ parseMiddles s ++ (parseTrailing s : [])
 
 newtype Channel = Channel String
 
-performUserCommand :: Command -> Params -> Maybe String -> IRC ()
-performUserCommand (Command c) middles Nothing = write $ c ++ " " ++ unwords middles
-performUserCommand (Command c) middles (Just trailing) = write $ c ++ " " ++ unwords middles ++ " :" ++ trailing
+uc :: Command -> Params -> Maybe String -> String
+uc (Command c) middles Nothing = c ++ " " ++ unwords middles
+uc (Command c) middles (Just trailing) = c ++ " " ++ unwords middles ++ " :" ++ trailing
 
-ucAway :: Maybe String -> IRC ()
-ucAway message = performUserCommand (Command "AWAY") (toList message) Nothing
+ucAway :: Maybe String -> String
+ucAway message = uc (Command "AWAY") (toList message) Nothing
 
-ucInvite :: Nick -> Channel -> IRC ()
-ucInvite (Nick n) (Channel c) = performUserCommand (Command "INVITE") [n, c] Nothing
+ucInvite :: Nick -> Channel -> String
+ucInvite (Nick n) (Channel c) = uc (Command "INVITE") [n, c] Nothing
+
+{--------------------------------------------------------------}
+{----------------------- Server Commands ----------------------}
+{--------------------------------------------------------------}
+
+isPrivmsg :: (Prefix, Command, Params) -> Bool
+isPrivmsg (_, Command c, _) = c == "PRIVMSG"
