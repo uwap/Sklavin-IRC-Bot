@@ -1,6 +1,7 @@
 module Main where
 
-import IRC.Commands
+import IRC.Connection
+import IRC.Config
 
 main :: IO ()
-main = return ()
+main = start $ Config "irc.german-elite.net" 6667 "Sklavin"

@@ -2,23 +2,25 @@ module IRC.Connection where
 
 import qualified Network as N
 import IRC.Proto
+import IRC.Config
 import System.IO (hSetBuffering, BufferMode(NoBuffering), Handle, hGetLine, hClose)
 import Text.Printf (hPrintf)
+import Control.Monad (forever)
 import Control.Monad.Reader (ReaderT, asks, liftIO, runReaderT)
 
 type IRC = ReaderT Irc IO
-data Irc = Irc { socket :: Handle }
+data Irc = Irc { socket :: Handle, config :: Config }
 
-start :: Integral a => String -> a -> IO ()
-start server port = do
-  irc <- connectTo server port
+start :: Config -> IO ()
+start config = do
+  irc <- connectTo config
   runReaderT run irc
 
-connectTo :: Integral a => String -> a -> IO Irc
-connectTo server port = do
-  h <- N.connectTo server (N.PortNumber (fromIntegral port))
+connectTo :: Config -> IO Irc
+connectTo config = do
+  h <- N.connectTo (server config) (N.PortNumber (fromIntegral (port config)))
   hSetBuffering h NoBuffering
-  return $ Irc h
+  return $ Irc h config
 
 write :: String -> IRC ()
 write s = do
@@ -27,11 +29,16 @@ write s = do
 
 run :: IRC ()
 run = do
-  -- connect
+  conf <- asks config
+  write $ "NICK " ++ nick conf
+  write $ "USER " ++ nick conf ++ " 0 * :" ++ nick conf
   listen
 
 listen :: IRC ()
-listen = return ()
+listen = forever $ do
+  h <- asks socket
+  s <- liftIO $ hGetLine h
+  liftIO $ putStrLn s
 
 disconnect :: Maybe String -> IRC ()
 disconnect m = do
