@@ -1,6 +1,6 @@
 module Main where
 
-import IRC.Proto
+import IRC.Commands
 
 main :: IO ()
 main = return ()

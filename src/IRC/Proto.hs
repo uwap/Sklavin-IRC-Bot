@@ -77,6 +77,9 @@ ucAway message = uc (Command "AWAY") (toList message) Nothing
 ucInvite :: Nick -> Channel -> String
 ucInvite (Nick n) (Channel c) = uc (Command "INVITE") [n, c] Nothing
 
+ucQuit :: Maybe String -> String
+ucQuit msg = uc (Command "QUIT") [] msg
+
 {--------------------------------------------------------------}
 {----------------------- Server Commands ----------------------}
 {--------------------------------------------------------------}

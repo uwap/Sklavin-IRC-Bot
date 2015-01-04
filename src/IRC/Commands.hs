@@ -10,4 +10,4 @@ back :: IRC ()
 back = write $ ucAway Nothing
 
 invite :: Nick -> Channel -> IRC ()
-invite = write . ucInvite
+invite n = write . ucInvite n
