@@ -18,3 +18,6 @@ joinChannel c = write $ ucJoin c
 
 pong :: String -> IRC ()
 pong = write . ucPong
+
+privmsg :: Channel -> String -> IRC ()
+privmsg c = write . ucPrivmsg c

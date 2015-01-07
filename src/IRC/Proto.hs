@@ -14,7 +14,7 @@ newtype Host = Host String
 parseUserHost :: String -> (Nick, Name, Host)
 parseUserHost s = (nick s, name s, host s)
   where
-    nick = Nick . takeWhile (/= '!') . drop 1
+    nick = Nick . takeWhile (/= '!')
     name = Name . takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
     host = Host . drop 1 . dropWhile (/= '@')
 
@@ -35,7 +35,7 @@ data Message = Message { prefix  :: Maybe Prefix
 parseCommand :: String -> Message
 parseCommand (':':s) = Message (Just $ source s) (command s) (params s)
                   where
-                     source   = Prefix . takeWhile (/= ' ') . drop 1
+                     source   = Prefix . takeWhile (/= ' ')
                      command  = Command . takeWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
                      params   = parseParams . dropWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
 parseCommand s = Message Nothing (command s) (params s)
@@ -92,6 +92,9 @@ ucJoin (Channel chan) = uc (Command "JOIN") (return chan) Nothing
 
 ucPong :: String -> String
 ucPong c = uc (Command "PONG") [] $ Just c
+
+ucPrivmsg :: Channel -> String -> String
+ucPrivmsg (Channel c) s = uc (Command "PRIVMSG") (return c) $ Just s
 
 {--------------------------------------------------------------}
 {----------------------- Server Commands ----------------------}
