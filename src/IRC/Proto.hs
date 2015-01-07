@@ -22,19 +22,26 @@ newtype Prefix   = Prefix String
 newtype Command  = Command String
 type    Params   = [String]
 
+data Message = Message { prefix  :: Maybe Prefix
+                       , command :: Command
+                       , params  :: Params
+                       }
+
 {--
  RFC2812 defines a message as
     message    =  [ ":" prefix SPACE ] command [ params ] crlf
  This parses prefix, command and params out of it.
 --}
-parseCommand :: String -> Maybe (Prefix, Command, Params)
-parseCommand (':':_) = Nothing
-parseCommand s       = Just (source s, command s, params s)
+parseCommand :: String -> Message
+parseCommand (':':s) = Message (Just $ source s) (command s) (params s)
                   where
                      source   = Prefix . takeWhile (/= ' ') . drop 1
                      command  = Command . takeWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
                      params   = parseParams . dropWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
-               
+parseCommand s = Message Nothing (command s) (params s)
+                where
+                    command  = Command . takeWhile (/= ' ')
+                    params   = parseParams . dropWhile (/= ' ')
 {--
  Parsing Params is more complicated then parsing command or source.
  Therefor we add an extra parsing function.
@@ -80,9 +87,18 @@ ucInvite (Nick n) (Channel c) = uc (Command "INVITE") [n, c] Nothing
 ucQuit :: Maybe String -> String
 ucQuit msg = uc (Command "QUIT") [] msg
 
+ucJoin :: Channel -> String
+ucJoin (Channel chan) = uc (Command "JOIN") (return chan) Nothing
+
+ucPong :: String -> String
+ucPong c = uc (Command "PONG") [] $ Just c
+
 {--------------------------------------------------------------}
 {----------------------- Server Commands ----------------------}
 {--------------------------------------------------------------}
 
 isPrivmsg :: (Prefix, Command, Params) -> Bool
 isPrivmsg (_, Command c, _) = c == "PRIVMSG"
+
+isPing :: (Prefix, Command, Params) -> Bool
+isPing (_, Command c, _) = c == "PING"

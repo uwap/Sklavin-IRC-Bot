@@ -4,12 +4,9 @@ import qualified Network as N
 import IRC.Proto
 import IRC.Config
 import System.IO (hSetBuffering, BufferMode(NoBuffering), Handle, hGetLine, hClose)
-import Text.Printf (hPrintf)
+import Text.Printf (hPrintf, printf)
 import Control.Monad (forever)
-import Control.Monad.Reader (ReaderT, asks, liftIO, runReaderT)
-
-type IRC = ReaderT Irc IO
-data Irc = Irc { socket :: Handle, config :: Config }
+import Control.Monad.Reader (asks, liftIO, runReaderT)
 
 start :: Config -> IO ()
 start config = do
@@ -26,6 +23,7 @@ write :: String -> IRC ()
 write s = do
   h <- asks socket
   liftIO $ hPrintf h "%s\r\n" s
+  liftIO $ printf "» %s\r\n" s
 
 run :: IRC ()
 run = do
@@ -39,6 +37,8 @@ listen = forever $ do
   h <- asks socket
   s <- liftIO $ hGetLine h
   liftIO $ putStrLn s
+  conf <- asks config
+  listener conf $ parseCommand s
 
 disconnect :: Maybe String -> IRC ()
 disconnect m = do
