@@ -61,7 +61,7 @@ parseCommand s = Message Nothing (command s) (params s)
  If there are > 14 middles, we join them.
 --}
 parseParams :: String -> Params
-parseParams s = filter (not . null) $ parseMiddles s ++ (parseTrailing s : [])
+parseParams s = filter (not . null) $ parseMiddles s ++ ([parseTrailing s])
             where
               parseMiddles s = let middles = filter (not . null) $ parseMiddles' s in
                         take 14 middles ++ (return . unwords) (drop 14 middles)
@@ -85,7 +85,7 @@ ucInvite :: Nick -> Channel -> String
 ucInvite (Nick n) (Channel c) = uc (Command "INVITE") [n, c] Nothing
 
 ucQuit :: Maybe String -> String
-ucQuit msg = uc (Command "QUIT") [] msg
+ucQuit = uc (Command "QUIT") []
 
 ucJoin :: Channel -> String
 ucJoin (Channel chan) = uc (Command "JOIN") (return chan) Nothing
