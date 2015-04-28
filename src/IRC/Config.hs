@@ -3,6 +3,7 @@ module IRC.Config where
 import IRC.Proto
 import Data.Configurator
 import Data.Configurator.Types
+import Data.HashMap.Strict (keys)
 import System.IO (Handle)
 import Control.Monad.Reader (ReaderT)
 

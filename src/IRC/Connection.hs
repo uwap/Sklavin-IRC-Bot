@@ -8,18 +8,30 @@ import Data.Configurator
 import Data.Configurator.Types
 import System.IO (hSetBuffering, BufferMode(NoBuffering), Handle, hGetLine, hClose)
 import Text.Printf (hPrintf, printf)
-import Control.Monad (forever)
+import Control.Monad
 import Control.Monad.Reader (asks, liftIO, runReaderT)
+import Control.Concurrent
 
 start :: (Message -> IRC ()) -> IO ()
 start eventListener = do
   config <- loadConfig
-  irc <- connectTo config eventListener
-  runReaderT run irc
+  servers <- require config "servers" :: IO [String]
+  spawnThreads servers config eventListener
 
-connectTo :: Config -> (Message -> IRC ()) -> IO Irc
-connectTo config eventListener = do
-  server <- require config "server"
+spawnThreads :: [String] -> Config -> (Message -> IRC ()) -> IO ()
+spawnThreads servers config eventListener = do
+    children <- forM servers $ \server -> do
+      m <- newEmptyMVar
+      forkFinally (spawnThread m server config eventListener) $ const $ putMVar m ()
+      return m
+    forM_ children takeMVar
+  where
+    spawnThread m server config eventListener = do
+      irc <- connectTo server config eventListener
+      runReaderT run irc
+
+connectTo :: String -> Config -> (Message -> IRC ()) -> IO Irc
+connectTo server config eventListener = do
   port <- require config "port" :: IO Int
   h <- N.connectTo server (N.PortNumber $ fromIntegral port)
   hSetBuffering h NoBuffering

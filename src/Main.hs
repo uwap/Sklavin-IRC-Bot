@@ -12,7 +12,7 @@ import Control.Concurrent.Timer (oneShotTimer)
 import Control.Concurrent.Suspend.Lifted
 
 main :: IO ()
-main = start eventListener-- $ Config "irc.hackint.net" 6667 "Sklavin" eventListener
+main = start eventListener
 
 eventListener :: Message -> IRC ()
 eventListener msg@(Message _ (Command "PING") s)         = pong (head s)
