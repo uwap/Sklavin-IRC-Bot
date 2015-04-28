@@ -6,6 +6,7 @@ import IRC.Proto
 import IRC.Config
 import Data.Configurator
 import Data.Configurator.Types
+import Data.Text
 import System.IO (hSetBuffering, BufferMode(NoBuffering), Handle, hGetLine, hClose)
 import Text.Printf (hPrintf, printf)
 import Control.Monad
@@ -22,7 +23,8 @@ spawnThreads :: [String] -> Config -> (Message -> IRC ()) -> IO ()
 spawnThreads servers config eventListener = do
     children <- forM servers $ \server -> do
       m <- newEmptyMVar
-      forkFinally (spawnThread m server config eventListener) $ const $ putMVar m ()
+      forkFinally (spawnThread m server config eventListener) $
+        either (\e -> print e >> putMVar m ()) (const $ putMVar m ())
       return m
     forM_ children takeMVar
   where
@@ -32,10 +34,11 @@ spawnThreads servers config eventListener = do
 
 connectTo :: String -> Config -> (Message -> IRC ()) -> IO Irc
 connectTo server config eventListener = do
-  port <- require config "port" :: IO Int
-  h <- N.connectTo server (N.PortNumber $ fromIntegral port)
+  addr <- require config $ pack (server ++ ".server") :: IO String
+  port <- require config $ pack (server ++ ".port") :: IO Int
+  h <- N.connectTo addr (N.PortNumber $ fromIntegral port)
   hSetBuffering h NoBuffering
-  return $ Irc h eventListener config
+  return $ Irc h eventListener config server
 
 write :: String -> IRC ()
 write s = do
@@ -46,8 +49,9 @@ write s = do
 
 run :: IRC ()
 run = do
+  server <- asks serverName
   conf <- asks config
-  nick <- liftIO $ require conf "nick"
+  nick <- liftIO $ require conf $ pack (server ++ ".nick")
   write $ "NICK " ++ nick
   write $ "USER " ++ nick ++ " 0 * :" ++ nick
   listen
