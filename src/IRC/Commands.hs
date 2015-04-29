@@ -34,7 +34,7 @@ privmsg c = write . ucPrivmsg c
 configuratedCommand :: Nick -> Channel -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
 configuratedCommand (Nick nick) chan@(Channel channel) (comm:args) = do
-    let name = "Command." ++ comm
+    let name = "Commands." ++ comm
     commands <- fromMaybe [] <$> lookupGlobalConfig (name ++ ".reply")
     unless (null commands) $ do
       random <- liftIO randomIO

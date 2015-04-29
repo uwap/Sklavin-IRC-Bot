@@ -6,6 +6,8 @@ import IRC.Commands
 import IRC.Proto
 import IRC.Logging
 
+import Data.Time.Clock
+
 import Control.Monad.Reader (liftIO)
 import Control.Monad.Trans.Reader
 import Control.Concurrent.Timer (oneShotTimer)
@@ -32,6 +34,7 @@ onCommand :: Nick -> Channel -> [String] -> IRC ()
 onCommand _ _ [] = return ()
 onCommand n@(Nick nick) channel commands@(cmd:_args)
     | cmd == "pizza"   = pizza
+    | cmd == "time"    = liftIO getCurrentTime >>= privmsg channel . show
     | otherwise        = configuratedCommand n channel commands
   where
     pizza = do
