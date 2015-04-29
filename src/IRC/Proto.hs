@@ -1,6 +1,5 @@
 module IRC.Proto where
 
-import Data.List (isPrefixOf)
 import Data.Foldable (toList)
 
 {--------------------------------------------------------------}
@@ -33,15 +32,15 @@ data Message = Message { prefix  :: Maybe Prefix
  This parses prefix, command and params out of it.
 --}
 parseCommand :: String -> Message
-parseCommand (':':s) = Message (Just $ source s) (command s) (params s)
+parseCommand (':':s) = Message (Just $ source s) (cmd s) (parameters s)
                   where
-                     source   = Prefix . takeWhile (/= ' ')
-                     command  = Command . takeWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
-                     params   = parseParams . dropWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
-parseCommand s = Message Nothing (command s) (params s)
+                     source     = Prefix . takeWhile (/= ' ')
+                     cmd        = Command . takeWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
+                     parameters = parseParams . dropWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
+parseCommand s = Message Nothing (cmd s) (parameters s)
                 where
-                    command  = Command . takeWhile (/= ' ')
-                    params   = parseParams . dropWhile (/= ' ')
+                    cmd        = Command . takeWhile (/= ' ')
+                    parameters = parseParams . dropWhile (/= ' ')
 {--
  Parsing Params is more complicated then parsing command or source.
  Therefor we add an extra parsing function.
@@ -61,9 +60,9 @@ parseCommand s = Message Nothing (command s) (params s)
  If there are > 14 middles, we join them.
 --}
 parseParams :: String -> Params
-parseParams s = filter (not . null) $ parseMiddles s ++ [parseTrailing s]
+parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
             where
-              parseMiddles s = let middles = filter (not . null) $ parseMiddles' s in
+              parseMiddles   = let middles = filter (not . null) $ parseMiddles' s in
                         take 14 middles ++ (return . unwords) (drop 14 middles)
               parseMiddles'  = words . takeWhile (/= ':')
               parseTrailing  = drop 1 . dropWhile (/= ':')

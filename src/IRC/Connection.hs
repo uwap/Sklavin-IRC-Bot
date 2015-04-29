@@ -7,7 +7,7 @@ import IRC.Config
 import Data.Configurator
 import Data.Configurator.Types
 import Data.Text
-import System.IO (hSetBuffering, BufferMode(NoBuffering), Handle, hGetLine, hClose)
+import System.IO (hSetBuffering, BufferMode(NoBuffering), hGetLine, hClose)
 import Text.Printf (hPrintf, printf)
 import Control.Monad
 import Control.Monad.Reader (asks, liftIO, runReaderT)
@@ -15,30 +15,30 @@ import Control.Concurrent
 
 start :: (Message -> IRC ()) -> IO ()
 start eventListener = do
-  config <- loadConfig
-  servers <- require config "servers" :: IO [String]
-  spawnThreads servers config eventListener
+  conf <- loadConfig
+  servers <- require conf "servers" :: IO [String]
+  spawnThreads servers conf eventListener
 
 spawnThreads :: [String] -> Config -> (Message -> IRC ()) -> IO ()
-spawnThreads servers config eventListener = do
+spawnThreads servers conf eventListener = do
     children <- forM servers $ \server -> do
       m <- newEmptyMVar
-      forkFinally (spawnThread m server config eventListener) $
+      _ <- forkFinally (spawnThread server) $
         either (\e -> print e >> putMVar m ()) (const $ putMVar m ())
       return m
     forM_ children takeMVar
   where
-    spawnThread m server config eventListener = do
-      irc <- connectTo server config eventListener
+    spawnThread server = do
+      irc <- connectTo server conf eventListener
       runReaderT run irc
 
 connectTo :: String -> Config -> (Message -> IRC ()) -> IO Irc
-connectTo server config eventListener = do
-  addr <- require config $ pack (server ++ ".server") :: IO String
-  port <- require config $ pack (server ++ ".port") :: IO Int
+connectTo server conf eventListener = do
+  addr <- require conf $ pack (server ++ ".server") :: IO String
+  port <- require conf $ pack (server ++ ".port") :: IO Int
   h <- N.connectTo addr (N.PortNumber $ fromIntegral port)
   hSetBuffering h NoBuffering
-  return $ Irc h eventListener config server
+  return $ Irc h eventListener conf server
 
 write :: String -> IRC ()
 write s = do

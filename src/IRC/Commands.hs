@@ -2,15 +2,18 @@
 module IRC.Commands where
 
 import IRC.Connection
-import IRC.Proto
+import IRC.Proto hiding (command)
 import IRC.Config
 
 import System.Random (randomIO)
 
+import Control.Monad
 import Control.Monad.Reader (liftIO)
 import Control.Monad.Trans.Reader
 
 import Data.Text (Text, pack, unpack, replace)
+import Data.Maybe (fromMaybe, maybeToList)
+
 import qualified Data.Configurator as C
 import qualified Data.Configurator.Types as C
 
@@ -32,32 +35,26 @@ pong = write . ucPong
 privmsg :: Channel -> String -> IRC ()
 privmsg c = write . ucPrivmsg c
 
-configuratedCommand :: Nick -> Channel -> [String] -> C.Name -> IRC ()
-configuratedCommand (Nick nick) chan@(Channel channel) (comm:args) name = do
+configuratedCommand :: Nick -> Channel -> [String] -> IRC ()
+configuratedCommand _ _ [] = return ()
+configuratedCommand (Nick nick) chan@(Channel channel) (comm:args) = do
+    let name = "Command." ++ comm
     conf <- asks config
-    maybeCommand <- liftIO $ C.lookup conf $ pack (unpack name ++ ".reply")
-    case maybeCommand of
-      Nothing -> return ()
-      Just commands -> do
-        command <- liftIO randomIO >>= \r -> return $ commands !! (r `mod` length commands)
-        replaceNick           nick channel args name conf (pack command)
-          >>= replaceChannel  nick channel args name conf
-          >>= replaceArgs     nick channel args name conf
-          >>= privmsg chan . unpack
+    commands <- liftIO $ fmap (concat . maybeToList) $ C.lookup conf $ pack (name ++ ".reply")
+    unless (null commands) $ do
+      command <- liftM ((commands !!) . (`mod` length commands)) $ liftIO randomIO
+      repl "@nick" nick (pack command)
+        >>= repl "@channel" channel
+        >>= replaceArgs conf name
+        >>= privmsg chan . unpack
   where
-    replaceNick :: String -> String -> [String] -> C.Name -> C.Config -> Text -> IRC Text
-    replaceNick nick _ _ _ _ = return . replace "@nick" (pack nick)
-
-    replaceChannel :: String -> String -> [String] -> C.Name -> C.Config -> Text -> IRC Text
-    replaceChannel _ channel _ _ _ = return . replace "@channel" (pack channel)
-
-    replaceArgs :: String -> String -> [String] -> C.Name -> C.Config -> Text -> IRC Text
-    replaceArgs nick _ args' name conf text = case args' of
-        [] -> do
-          maybeReplace <- liftIO $ C.lookup conf $ pack (unpack name ++ ".replaceEmptyArgsWithNick")
-          case maybeReplace of
-            Just True -> return $ replace "@args" (pack nick) text
-            _ -> return $ replace "@args" (pack $ unwords args) text
-        args -> return $ replace "@args" (pack $ unwords args) text
-
-
+    repl :: Text -> String -> Text -> IRC Text
+    repl pattern replaceString = return . replace pattern (pack replaceString)
+    
+    replaceArgs :: C.Config -> String -> Text -> IRC Text
+    replaceArgs conf name text = do
+      setting <- return . fromMaybe False =<< liftIO (C.lookup conf $ pack (name ++ ".replaceEmptyArgsWithNick"))
+      if setting && null args then
+        repl "@args" nick text
+      else
+        repl "@args" (unwords args) text
