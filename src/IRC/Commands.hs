@@ -37,19 +37,19 @@ configuratedCommand (Nick nick) chan@(Channel channel) (comm:args) = do
     let name = "Command." ++ comm
     commands <- fromMaybe [] <$> lookupGlobalConfig (name ++ ".reply")
     unless (null commands) $ do
-      command <- liftM ((commands !!) . (`mod` length commands)) $ liftIO randomIO
-      repl "@nick" nick (pack command)
-        >>= repl "@channel" channel
-        >>= replaceArgs name
-        >>= privmsg chan . unpack
+      random <- liftIO randomIO
+      let command = commands !! (random `mod` length commands)
+      argsReplace <- replaceArgs name
+      let reply = replaceAll (pack command) [("@nick",nick), ("@channel",channel), ("@args",argsReplace)]
+      privmsg chan (unpack reply)
   where
-    repl :: Text -> String -> Text -> IRC Text
-    repl pattern replaceString = return . replace pattern (pack replaceString)
+    replaceAll :: Text -> [(String,String)] -> Text
+    replaceAll = foldl (\text (pattern,repl) -> replace (pack pattern) (pack repl) text)
     
-    replaceArgs :: String -> Text -> IRC Text
-    replaceArgs name text = do
+    replaceArgs :: String -> IRC String
+    replaceArgs name  = do
       setting <- return . fromMaybe False =<< lookupGlobalConfig (name ++ ".replaceEmptyArgsWithNick")
       if setting && null args then
-        repl "@args" nick text
+        return nick
       else
-        repl "@args" (unwords args) text
+        return (unwords args)

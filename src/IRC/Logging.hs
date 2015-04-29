@@ -4,7 +4,7 @@ import IRC.Config
 import IRC.Proto
 
 import System.Directory
-import System.FilePath.Posix
+import System.FilePath
 
 import Control.Monad
 import Control.Monad.Reader
