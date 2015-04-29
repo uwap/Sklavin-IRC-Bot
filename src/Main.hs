@@ -10,6 +10,7 @@ import Control.Monad.Reader (liftIO)
 import Control.Monad.Trans.Reader
 import Control.Concurrent.Timer (oneShotTimer)
 import Control.Concurrent.Suspend.Lifted
+import Data.Text (pack)
 
 main :: IO ()
 main = start eventListener
@@ -29,12 +30,10 @@ onPrivmsg (Message (Just (Prefix source)) _ (channel:message)) = do
 onPrivmsg _ = return ()
 
 onCommand :: Nick -> Channel -> [String] -> IRC ()
-onCommand (Nick nick) channel@(Channel chan) (command:args)
-    | command == "hi"      = privmsg channel $ "Hey " ++ nick
+onCommand nnick@(Nick nick) channel@(Channel chan) clist@(command:args)
     | command == "penis"   = liftIO randomIO >>= \r -> privmsg channel $ "8" ++ replicate (r `mod` 30) '=' ++ "D"
-    | command == "meinung" = meinung args >>= privmsg channel
     | command == "pizza"   = pizza channel nick
-    | otherwise            = return ()
+    | otherwise            = configuratedCommand nnick channel clist $ pack ("Commands." ++ command)
   where
     pizza chan nick = do
       privmsg chan $ nick ++ ", ich geb dir bescheid, sobald deine Pizza fertig ist."
@@ -42,28 +41,3 @@ onCommand (Nick nick) channel@(Channel chan) (command:args)
       liftIO . flip oneShotTimer (mDelay 15) . flip runReaderT handle $
         privmsg chan $ nick ++ ", hey, aufwachen! Schlafmütze! Deine Pizza ist fertig!"
       return ()
-
-meinung :: [String] -> IRC String
-meinung args = do
-  let arg = unwords args
-  random <- liftIO randomIO
-  return $ arg ++ " " ++ (meinungen !! (random `mod` length meinungen))
-  
-meinungen :: [String]
-meinungen = [ "finde ich voll toll"
-            , "ist doch mega scheiße"
-            , "interessiert bitte wen?!"
-            , "knuddel ich voll gern"
-            , "geht mir am Arsch vorbei"
-            , "ist mein Superheld"
-            , "hat mir Kekse versprochen, aber ich habe nie welche bekommen =("
-            , "kann mich mal in den Arsch ficken"
-            , "… Untenrum!"
-            , "ist fett"
-            , "geht voll ab"
-            , "finde ich nicht so mega"
-            , "ist dumm wie Stroh"
-            , "got owned"
-            , "mag keine Pizza!"
-            , "ist nicht so toll wie uwap"
-            ]
