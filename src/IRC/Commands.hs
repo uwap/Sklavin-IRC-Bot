@@ -10,7 +10,7 @@ import System.Random (randomIO)
 import Control.Monad.Reader (liftIO)
 import Control.Monad.Trans.Reader
 
-import Data.Text (pack, unpack, replace)
+import Data.Text (Text, pack, unpack, replace)
 import qualified Data.Configurator as C
 import qualified Data.Configurator.Types as C
 
@@ -34,13 +34,30 @@ privmsg c = write . ucPrivmsg c
 
 configuratedCommand :: Nick -> Channel -> [String] -> C.Name -> IRC ()
 configuratedCommand (Nick nick) chan@(Channel channel) (comm:args) name = do
-  conf <- asks config
-  maybeCommand <- liftIO $ C.lookup conf name
-  case maybeCommand of
-    Nothing -> return ()
-    Just commands -> do
-      command <- liftIO randomIO >>= \r -> return $ commands !! (r `mod` length commands)
-      let n = replace "@nick" (pack nick) $ pack command
-      let c = replace "@channel" (pack channel) n
-      let a = replace "@args" (pack $ unwords args) c
-      privmsg chan $ unpack a
+    conf <- asks config
+    maybeCommand <- liftIO $ C.lookup conf $ pack (unpack name ++ ".reply")
+    case maybeCommand of
+      Nothing -> return ()
+      Just commands -> do
+        command <- liftIO randomIO >>= \r -> return $ commands !! (r `mod` length commands)
+        replaceNick           nick channel args name conf (pack command)
+          >>= replaceChannel  nick channel args name conf
+          >>= replaceArgs     nick channel args name conf
+          >>= privmsg chan . unpack
+  where
+    replaceNick :: String -> String -> [String] -> C.Name -> C.Config -> Text -> IRC Text
+    replaceNick nick _ _ _ _ = return . replace "@nick" (pack nick)
+
+    replaceChannel :: String -> String -> [String] -> C.Name -> C.Config -> Text -> IRC Text
+    replaceChannel _ channel _ _ _ = return . replace "@channel" (pack channel)
+
+    replaceArgs :: String -> String -> [String] -> C.Name -> C.Config -> Text -> IRC Text
+    replaceArgs nick _ args' name conf text = case args' of
+        [] -> do
+          maybeReplace <- liftIO $ C.lookup conf $ pack (unpack name ++ ".replaceEmptyArgsWithNick")
+          case maybeReplace of
+            Just True -> return $ replace "@args" (pack nick) text
+            _ -> return $ replace "@args" (pack $ unwords args) text
+        args -> return $ replace "@args" (pack $ unwords args) text
+
+
