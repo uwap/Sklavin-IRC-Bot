@@ -12,7 +12,7 @@ import Control.Monad.Reader (liftIO)
 import Control.Monad.Trans.Reader
 
 import Data.Text (Text, pack, unpack, replace)
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.Maybe (fromMaybe)
 
 import qualified Data.Configurator as C
 import qualified Data.Configurator.Types as C
@@ -40,7 +40,7 @@ configuratedCommand _ _ [] = return ()
 configuratedCommand (Nick nick) chan@(Channel channel) (comm:args) = do
     let name = "Command." ++ comm
     conf <- asks config
-    commands <- liftIO $ fmap (concat . maybeToList) $ C.lookup conf $ pack (name ++ ".reply")
+    commands <- liftIO $ fmap (fromMaybe []) $ C.lookup conf $ pack (name ++ ".reply")
     unless (null commands) $ do
       command <- liftM ((commands !!) . (`mod` length commands)) $ liftIO randomIO
       repl "@nick" nick (pack command)
