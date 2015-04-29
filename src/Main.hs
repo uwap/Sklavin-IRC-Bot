@@ -31,7 +31,6 @@ onPrivmsg _ = return ()
 
 onCommand :: Nick -> Channel -> [String] -> IRC ()
 onCommand nnick@(Nick nick) channel@(Channel chan) clist@(command:args)
-    | command == "penis"   = liftIO randomIO >>= \r -> privmsg channel $ "8" ++ replicate (r `mod` 30) '=' ++ "D"
     | command == "pizza"   = pizza channel nick
     | otherwise            = configuratedCommand nnick channel clist $ pack ("Commands." ++ command)
   where
