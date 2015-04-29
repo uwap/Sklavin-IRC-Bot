@@ -4,6 +4,7 @@ import IRC.Connection
 import IRC.Config
 import IRC.Commands
 import IRC.Proto
+--import IRC.Logging
 
 import Control.Monad.Reader (liftIO)
 import Control.Monad.Trans.Reader

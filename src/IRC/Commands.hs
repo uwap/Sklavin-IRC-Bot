@@ -9,13 +9,9 @@ import System.Random (randomIO)
 
 import Control.Monad
 import Control.Monad.Reader (liftIO)
-import Control.Monad.Trans.Reader
 
 import Data.Text (Text, pack, unpack, replace)
 import Data.Maybe (fromMaybe)
-
-import qualified Data.Configurator as C
-import qualified Data.Configurator.Types as C
 
 away :: String -> IRC ()
 away = write . ucAway . Just
@@ -39,21 +35,20 @@ configuratedCommand :: Nick -> Channel -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
 configuratedCommand (Nick nick) chan@(Channel channel) (comm:args) = do
     let name = "Command." ++ comm
-    conf <- asks config
-    commands <- liftIO $ fmap (fromMaybe []) $ C.lookup conf $ pack (name ++ ".reply")
+    commands <- fromMaybe [] <$> lookupGlobalConfig (name ++ ".reply")
     unless (null commands) $ do
       command <- liftM ((commands !!) . (`mod` length commands)) $ liftIO randomIO
       repl "@nick" nick (pack command)
         >>= repl "@channel" channel
-        >>= replaceArgs conf name
+        >>= replaceArgs name
         >>= privmsg chan . unpack
   where
     repl :: Text -> String -> Text -> IRC Text
     repl pattern replaceString = return . replace pattern (pack replaceString)
     
-    replaceArgs :: C.Config -> String -> Text -> IRC Text
-    replaceArgs conf name text = do
-      setting <- return . fromMaybe False =<< liftIO (C.lookup conf $ pack (name ++ ".replaceEmptyArgsWithNick"))
+    replaceArgs :: String -> Text -> IRC Text
+    replaceArgs name text = do
+      setting <- return . fromMaybe False =<< lookupGlobalConfig (name ++ ".replaceEmptyArgsWithNick")
       if setting && null args then
         repl "@args" nick text
       else

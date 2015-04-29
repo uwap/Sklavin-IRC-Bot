@@ -4,11 +4,15 @@ module IRC.Connection where
 import qualified Network as N
 import IRC.Proto
 import IRC.Config
+
 import Data.Configurator
 import Data.Configurator.Types
 import Data.Text
+import Data.Maybe
+
 import System.IO (hSetBuffering, BufferMode(NoBuffering), hGetLine, hClose)
 import Text.Printf (hPrintf, printf)
+
 import Control.Monad
 import Control.Monad.Reader (asks, liftIO, runReaderT)
 import Control.Concurrent
@@ -49,9 +53,7 @@ write s = do
 
 run :: IRC ()
 run = do
-  server <- asks serverName
-  conf <- asks config
-  nick <- liftIO $ require conf $ pack (server ++ ".nick")
+  nick <- fromJust <$> lookupServerConfig "nick"
   write $ "NICK " ++ nick
   write $ "USER " ++ nick ++ " 0 * :" ++ nick
   listen
