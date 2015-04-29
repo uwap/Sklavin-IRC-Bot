@@ -61,7 +61,7 @@ parseCommand s = Message Nothing (command s) (params s)
  If there are > 14 middles, we join them.
 --}
 parseParams :: String -> Params
-parseParams s = filter (not . null) $ parseMiddles s ++ ([parseTrailing s])
+parseParams s = filter (not . null) $ parseMiddles s ++ [parseTrailing s]
             where
               parseMiddles s = let middles = filter (not . null) $ parseMiddles' s in
                         take 14 middles ++ (return . unwords) (drop 14 middles)
