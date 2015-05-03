@@ -69,6 +69,6 @@ listen = forever $ do
 
 disconnect :: Maybe String -> IRC ()
 disconnect m = do
-  write $ ucQuit m
+  write . evaluateUserCommand $ quit m
   h <- asks socket
   liftIO $ hClose h

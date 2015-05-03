@@ -3,8 +3,8 @@ module IRC.Commands where
 
 import IRC.Types
 import IRC.Connection
-import IRC.Proto hiding (command)
 import IRC.Config
+import qualified IRC.Proto as P
 
 import System.Random (randomIO)
 
@@ -15,22 +15,22 @@ import Data.Text (Text, pack, unpack, replace)
 import Data.Maybe (fromMaybe)
 
 away :: String -> IRC ()
-away = write . ucAway . Just
+away = write . P.evaluateUserCommand . P.away . Just
 
 back :: IRC ()
-back = write $ ucAway Nothing
+back = write . P.evaluateUserCommand $ P.away Nothing
 
 invite :: String -> String -> IRC ()
-invite nick chan = write $ ucInvite nick chan
+invite nick chan = write . P.evaluateUserCommand $ P.invite nick chan
 
 joinChannel :: String -> IRC ()
-joinChannel chan = write $ ucJoin chan
+joinChannel chan = write . P.evaluateUserCommand $ P.join chan
 
 pong :: String -> IRC ()
-pong = write . ucPong
+pong = write . P.evaluateUserCommand . P.pong
 
 privmsg :: String -> String -> IRC ()
-privmsg chan = write . ucPrivmsg chan
+privmsg chan = write . P.evaluateUserCommand . P.privmsg chan
 
 configuratedCommand :: String -> String -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()

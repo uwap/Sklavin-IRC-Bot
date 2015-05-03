@@ -63,24 +63,44 @@ parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
 {------------------------ User Commands -----------------------}
 {--------------------------------------------------------------}
 
-uc :: String -> [String] -> Maybe String -> String
-uc command middles Nothing = command ++ " " ++ unwords middles
-uc command middles (Just trailing) = command ++ " " ++ unwords middles ++ " :" ++ trailing
+data UserCommand = UserCommand { ucommand :: String
+                               , middles  :: [String]
+                               , trailing :: Maybe String
+                               }
 
-ucAway :: Maybe String -> String
-ucAway message = uc "AWAY" (toList message) Nothing
+evaluateUserCommand :: UserCommand -> String
+evaluateUserCommand (UserCommand cmd mids Nothing) = cmd ++ " " ++ unwords mids
+evaluateUserCommand (UserCommand cmd mids (Just trail)) = cmd ++ " " ++ unwords mids ++ " :" ++ trail
 
-ucInvite :: String -> String -> String
-ucInvite nick channel = uc "INVITE" [nick, channel] Nothing
+away :: Maybe String -> UserCommand
+away message = UserCommand { ucommand = "AWAY"
+                           , middles  = toList message
+                           , trailing = Nothing
+                           }
 
-ucQuit :: Maybe String -> String
-ucQuit = uc "QUIT" []
+invite :: String -> String -> UserCommand
+invite nick channel = UserCommand { ucommand = "INVITE"
+                                  , middles  = [nick, channel]
+                                  , trailing = Nothing
+                                  }
 
-ucJoin :: String -> String
-ucJoin channel = uc "JOIN" (return channel) Nothing
+quit :: Maybe String -> UserCommand
+quit = UserCommand "QUIT" []
 
-ucPong :: String -> String
-ucPong code = uc "PONG" [] $ Just code
+join :: String -> UserCommand
+join channel = UserCommand { ucommand = "JOIN"
+                           , middles  = pure channel
+                           , trailing = Nothing
+                           }
 
-ucPrivmsg :: String -> String -> String
-ucPrivmsg channel msg = uc "PRIVMSG" (return channel) $ Just msg
+pong :: String -> UserCommand
+pong code = UserCommand { ucommand = "PONG"
+                        , middles  = []
+                        , trailing = Just code
+                        }
+
+privmsg :: String -> String -> UserCommand
+privmsg channel msg = UserCommand { ucommand = "PRIVMSG"
+                                  , middles  = pure channel
+                                  , trailing = Just msg
+                                  }
