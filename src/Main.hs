@@ -4,7 +4,7 @@ module Main where
 import IRC.Types
 import IRC.Connection
 import IRC.Commands
-import IRC.Proto (RawMessage(..), parseUserHost)
+import IRC.Proto (parseUserHost)
 import IRC.Logging
 
 import Data.Time.Clock

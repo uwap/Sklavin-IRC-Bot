@@ -1,5 +1,6 @@
 module IRC.Proto where
 
+import IRC.Types
 import Data.Foldable (toList)
 
 {--------------------------------------------------------------}
@@ -12,11 +13,6 @@ parseUserHost s = (nick s, name s, host s)
     nick = takeWhile (/= '!')
     name = takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
     host = drop 1 . dropWhile (/= '@')
-
-data RawMessage = RawMessage { prefix  :: Maybe String
-                             , command :: String
-                             , params  :: [String]
-                             }
 
 {--
  RFC2812 defines a message as
@@ -62,12 +58,6 @@ parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
 {--------------------------------------------------------------}
 {------------------------ User Commands -----------------------}
 {--------------------------------------------------------------}
-
-data UserCommand = UserCommand { ucommand :: String
-                               , middles  :: [String]
-                               , trailing :: Maybe String
-                               }
-
 evaluateUserCommand :: UserCommand -> String
 evaluateUserCommand (UserCommand cmd mids Nothing) = cmd ++ " " ++ unwords mids
 evaluateUserCommand (UserCommand cmd mids (Just trail)) = cmd ++ " " ++ unwords mids ++ " :" ++ trail
