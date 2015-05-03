@@ -31,12 +31,12 @@ onPrivmsg (RawMessage (Just source) _ (channel:message)) = do
         _        -> return ()
 onPrivmsg _ = return ()
 
-onCommand :: Nick -> String -> [String] -> IRC ()
+onCommand :: String -> String -> [String] -> IRC ()
 onCommand _ _ [] = return ()
-onCommand n@(Nick nick) channel commands@(cmd:_args)
+onCommand nick channel commands@(cmd:_args)
     | cmd == "pizza"   = pizza
     | cmd == "time"    = liftIO getCurrentTime >>= privmsg channel . show
-    | otherwise        = configuratedCommand n channel commands
+    | otherwise        = configuratedCommand nick channel commands
   where
     pizza = do
       privmsg channel $ nick ++ ", ich geb dir bescheid, sobald deine Pizza fertig ist."

@@ -6,16 +6,12 @@ import Data.Foldable (toList)
 {--------------------------- Parsing --------------------------}
 {--------------------------------------------------------------}
 
-newtype Nick = Nick String
-newtype Name = Name String
-newtype Host = Host String
-
-parseUserHost :: String -> (Nick, Name, Host)
+parseUserHost :: String -> (String, String, String) -- Nick, Name, Host
 parseUserHost s = (nick s, name s, host s)
   where
-    nick = Nick . takeWhile (/= '!')
-    name = Name . takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
-    host = Host . drop 1 . dropWhile (/= '@')
+    nick = takeWhile (/= '!')
+    name = takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
+    host = drop 1 . dropWhile (/= '@')
 
 data RawMessage = RawMessage { prefix  :: Maybe String
                              , command :: String
@@ -74,8 +70,8 @@ uc command middles (Just trailing) = command ++ " " ++ unwords middles ++ " :" +
 ucAway :: Maybe String -> String
 ucAway message = uc "AWAY" (toList message) Nothing
 
-ucInvite :: Nick -> String -> String
-ucInvite (Nick n) channel = uc "INVITE" [n, channel] Nothing
+ucInvite :: String -> String -> String
+ucInvite nick channel = uc "INVITE" [nick, channel] Nothing
 
 ucQuit :: Maybe String -> String
 ucQuit = uc "QUIT" []

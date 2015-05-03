@@ -20,7 +20,7 @@ away = write . ucAway . Just
 back :: IRC ()
 back = write $ ucAway Nothing
 
-invite :: Nick -> String -> IRC ()
+invite :: String -> String -> IRC ()
 invite nick chan = write $ ucInvite nick chan
 
 joinChannel :: String -> IRC ()
@@ -32,9 +32,9 @@ pong = write . ucPong
 privmsg :: String -> String -> IRC ()
 privmsg chan = write . ucPrivmsg chan
 
-configuratedCommand :: Nick -> String -> [String] -> IRC ()
+configuratedCommand :: String -> String -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
-configuratedCommand (Nick nick) channel (comm:args) = do
+configuratedCommand nick channel (comm:args) = do
     let name = "Commands." ++ comm
     commands <- fromMaybe [] <$> lookupGlobalConfig (name ++ ".reply")
     unless (null commands) $ do

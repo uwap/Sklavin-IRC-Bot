@@ -1,7 +1,6 @@
 module IRC.Config where
 
 import IRC.Types
-import IRC.Proto
 
 import Data.Text
 import Data.Configurator
