@@ -17,29 +17,25 @@ parseUserHost s = (nick s, name s, host s)
     name = Name . takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
     host = Host . drop 1 . dropWhile (/= '@')
 
-newtype Prefix   = Prefix String
-newtype Command  = Command String
-type    Params   = [String]
-
-data Message = Message { prefix  :: Maybe Prefix
-                       , command :: Command
-                       , params  :: Params
-                       }
+data RawMessage = RawMessage { prefix  :: Maybe String
+                             , command :: String
+                             , params  :: [String]
+                             }
 
 {--
  RFC2812 defines a message as
     message    =  [ ":" prefix SPACE ] command [ params ] crlf
  This parses prefix, command and params out of it.
 --}
-parseCommand :: String -> Message
-parseCommand (':':s) = Message (Just $ source s) (cmd s) (parameters s)
+parseCommand :: String -> RawMessage
+parseCommand (':':s) = RawMessage (Just $ source s) (cmd s) (parameters s)
                   where
-                     source     = Prefix . takeWhile (/= ' ')
-                     cmd        = Command . takeWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
+                     source     = takeWhile (/= ' ')
+                     cmd        = takeWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
                      parameters = parseParams . dropWhile (/= ' ') . drop 1 . dropWhile (/= ' ')
-parseCommand s = Message Nothing (cmd s) (parameters s)
+parseCommand s = RawMessage Nothing (cmd s) (parameters s)
                 where
-                    cmd        = Command . takeWhile (/= ' ')
+                    cmd        = takeWhile (/= ' ')
                     parameters = parseParams . dropWhile (/= ' ')
 {--
  Parsing Params is more complicated then parsing command or source.
@@ -59,7 +55,7 @@ parseCommand s = Message Nothing (cmd s) (parameters s)
  The simplest way is to parse middles and trailing seperatively.
  If there are > 14 middles, we join them.
 --}
-parseParams :: String -> Params
+parseParams :: String -> [String]
 parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
             where
               parseMiddles   = let middles = filter (not . null) $ parseMiddles' s in
@@ -71,36 +67,24 @@ parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
 {------------------------ User Commands -----------------------}
 {--------------------------------------------------------------}
 
-newtype Channel = Channel String
-
-uc :: Command -> Params -> Maybe String -> String
-uc (Command c) middles Nothing = c ++ " " ++ unwords middles
-uc (Command c) middles (Just trailing) = c ++ " " ++ unwords middles ++ " :" ++ trailing
+uc :: String -> [String] -> Maybe String -> String
+uc command middles Nothing = command ++ " " ++ unwords middles
+uc command middles (Just trailing) = command ++ " " ++ unwords middles ++ " :" ++ trailing
 
 ucAway :: Maybe String -> String
-ucAway message = uc (Command "AWAY") (toList message) Nothing
+ucAway message = uc "AWAY" (toList message) Nothing
 
-ucInvite :: Nick -> Channel -> String
-ucInvite (Nick n) (Channel c) = uc (Command "INVITE") [n, c] Nothing
+ucInvite :: Nick -> String -> String
+ucInvite (Nick n) channel = uc "INVITE" [n, channel] Nothing
 
 ucQuit :: Maybe String -> String
-ucQuit = uc (Command "QUIT") []
+ucQuit = uc "QUIT" []
 
-ucJoin :: Channel -> String
-ucJoin (Channel chan) = uc (Command "JOIN") (return chan) Nothing
+ucJoin :: String -> String
+ucJoin channel = uc "JOIN" (return channel) Nothing
 
 ucPong :: String -> String
-ucPong c = uc (Command "PONG") [] $ Just c
+ucPong code = uc "PONG" [] $ Just code
 
-ucPrivmsg :: Channel -> String -> String
-ucPrivmsg (Channel c) s = uc (Command "PRIVMSG") (return c) $ Just s
-
-{--------------------------------------------------------------}
-{----------------------- Server Commands ----------------------}
-{--------------------------------------------------------------}
-
-isPrivmsg :: (Prefix, Command, Params) -> Bool
-isPrivmsg (_, Command c, _) = c == "PRIVMSG"
-
-isPing :: (Prefix, Command, Params) -> Bool
-isPing (_, Command c, _) = c == "PING"
+ucPrivmsg :: String -> String -> String
+ucPrivmsg channel msg = uc "PRIVMSG" (return channel) $ Just msg

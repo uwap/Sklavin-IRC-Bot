@@ -9,8 +9,8 @@ import System.FilePath
 import Control.Monad
 import Control.Monad.Reader
 
-logFile :: Channel -> IRC (Maybe FilePath)
-logFile (Channel chan) = do
+logFile :: String -> IRC (Maybe FilePath)
+logFile chan = do
     serverLogPath <- lookupServerConfig "logs"
     let filePath = serverLogPath >>= \path -> return (path </> chan <.> "log")
     case filePath of

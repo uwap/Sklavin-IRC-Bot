@@ -17,13 +17,13 @@ import Control.Monad
 import Control.Monad.Reader (asks, liftIO, runReaderT)
 import Control.Concurrent
 
-start :: (Message -> IRC ()) -> IO ()
+start :: (RawMessage -> IRC ()) -> IO ()
 start eventListener = do
   conf <- loadConfig
   servers <- require conf "servers" :: IO [String]
   spawnThreads servers conf eventListener
 
-spawnThreads :: [String] -> Config -> (Message -> IRC ()) -> IO ()
+spawnThreads :: [String] -> Config -> (RawMessage -> IRC ()) -> IO ()
 spawnThreads servers conf eventListener = do
     children <- forM servers $ \server -> do
       m <- newEmptyMVar
@@ -36,7 +36,7 @@ spawnThreads servers conf eventListener = do
       irc <- connectTo server conf eventListener
       runReaderT run irc
 
-connectTo :: String -> Config -> (Message -> IRC ()) -> IO Irc
+connectTo :: String -> Config -> (RawMessage -> IRC ()) -> IO Irc
 connectTo server conf eventListener = do
   addr <- require conf $ pack (server ++ ".server") :: IO String
   port <- require conf $ pack (server ++ ".port") :: IO Int

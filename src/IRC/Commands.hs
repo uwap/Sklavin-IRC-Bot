@@ -19,21 +19,21 @@ away = write . ucAway . Just
 back :: IRC ()
 back = write $ ucAway Nothing
 
-invite :: Nick -> Channel -> IRC ()
-invite n = write . ucInvite n
+invite :: Nick -> String -> IRC ()
+invite nick chan = write $ ucInvite nick chan
 
-joinChannel :: Channel -> IRC ()
-joinChannel c = write $ ucJoin c
+joinChannel :: String -> IRC ()
+joinChannel chan = write $ ucJoin chan
 
 pong :: String -> IRC ()
 pong = write . ucPong
 
-privmsg :: Channel -> String -> IRC ()
-privmsg c = write . ucPrivmsg c
+privmsg :: String -> String -> IRC ()
+privmsg chan = write . ucPrivmsg chan
 
-configuratedCommand :: Nick -> Channel -> [String] -> IRC ()
+configuratedCommand :: Nick -> String -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
-configuratedCommand (Nick nick) chan@(Channel channel) (comm:args) = do
+configuratedCommand (Nick nick) channel (comm:args) = do
     let name = "Commands." ++ comm
     commands <- fromMaybe [] <$> lookupGlobalConfig (name ++ ".reply")
     unless (null commands) $ do
@@ -41,7 +41,7 @@ configuratedCommand (Nick nick) chan@(Channel channel) (comm:args) = do
       let command = commands !! (random `mod` length commands)
       argsReplace <- replaceArgs name
       let reply = replaceAll (pack command) [("@nick",nick), ("@channel",channel), ("@args",argsReplace)]
-      privmsg chan (unpack reply)
+      privmsg channel (unpack reply)
   where
     replaceAll :: Text -> [(String,String)] -> Text
     replaceAll = foldl (\text (pattern,repl) -> replace (pack pattern) (pack repl) text)

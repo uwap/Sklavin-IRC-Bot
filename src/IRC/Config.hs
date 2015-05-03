@@ -12,7 +12,7 @@ import Control.Monad.Reader
 
 type IRC = ReaderT Irc IO
 data Irc = Irc { socket     :: Handle
-               , listener   :: Message -> IRC ()
+               , listener   :: RawMessage -> IRC ()
                , config     :: Config
                , serverName :: String
                }

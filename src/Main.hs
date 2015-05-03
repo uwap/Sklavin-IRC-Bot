@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 module Main where
 
 import IRC.Connection
@@ -16,21 +17,21 @@ import Control.Concurrent.Suspend.Lifted
 main :: IO ()
 main = start eventListener
 
-eventListener :: Message -> IRC ()
-eventListener (Message _ (Command "PING") s)         = pong (head s)
-eventListener (Message _ (Command "INVITE") chan)    = mapM_ (joinChannel . Channel) $ tail chan
-eventListener msg@(Message _ (Command "PRIVMSG") _)  = onPrivmsg msg
-eventListener _                                      = return ()
+eventListener :: RawMessage -> IRC ()
+eventListener (RawMessage _ "PING" s)         = pong (head s)
+eventListener (RawMessage _ "INVITE" chan)    = mapM_ joinChannel $ tail chan
+eventListener msg@(RawMessage _ "PRIVMSG" _)  = onPrivmsg msg
+eventListener _                               = return ()
 
-onPrivmsg :: Message -> IRC ()
-onPrivmsg (Message (Just (Prefix source)) _ (channel:message)) = do
+onPrivmsg :: RawMessage -> IRC ()
+onPrivmsg (RawMessage (Just source) _ (channel:message)) = do
       let (n, _, _) = parseUserHost source
       case unwords message of
-        ('!':xs) -> onCommand n (Channel channel) $ words xs
+        ('!':xs) -> onCommand n channel $ words xs
         _        -> return ()
 onPrivmsg _ = return ()
 
-onCommand :: Nick -> Channel -> [String] -> IRC ()
+onCommand :: Nick -> String -> [String] -> IRC ()
 onCommand _ _ [] = return ()
 onCommand n@(Nick nick) channel commands@(cmd:_args)
     | cmd == "pizza"   = pizza
