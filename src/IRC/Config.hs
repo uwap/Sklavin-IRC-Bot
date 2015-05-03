@@ -1,21 +1,13 @@
 module IRC.Config where
 
+import IRC.Types
 import IRC.Proto
 
 import Data.Text
 import Data.Configurator
 import Data.Configurator.Types
 
-import System.IO (Handle)
-
 import Control.Monad.Reader
-
-type IRC = ReaderT Irc IO
-data Irc = Irc { socket     :: Handle
-               , listener   :: RawMessage -> IRC ()
-               , config     :: Config
-               , serverName :: String
-               }
 
 loadConfig :: IO Config
 loadConfig = load [Required "config.conf"]

@@ -1,8 +1,8 @@
 {-# LANGUAGE TypeOperators #-}
 module Main where
 
+import IRC.Types
 import IRC.Connection
-import IRC.Config
 import IRC.Commands
 import IRC.Proto
 import IRC.Logging

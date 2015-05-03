@@ -2,6 +2,7 @@
 module IRC.Connection where
 
 import qualified Network as N
+import IRC.Types
 import IRC.Proto
 import IRC.Config
 

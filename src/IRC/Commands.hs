@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module IRC.Commands where
 
+import IRC.Types
 import IRC.Connection
 import IRC.Proto hiding (command)
 import IRC.Config

@@ -1,7 +1,7 @@
 module IRC.Logging where
 
+import IRC.Types
 import IRC.Config
-import IRC.Proto
 
 import System.Directory
 import System.FilePath
