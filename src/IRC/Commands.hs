@@ -13,6 +13,7 @@ import Control.Monad.Reader (liftIO)
 
 import Data.Text (Text, pack, unpack, replace)
 import Data.Maybe (fromMaybe)
+import Data.List (isPrefixOf)
 
 away :: String -> IRC ()
 away = write . P.evaluateUserCommand . P.away . Just
@@ -32,6 +33,9 @@ pong = write . P.evaluateUserCommand . P.pong
 privmsg :: String -> String -> IRC ()
 privmsg chan = write . P.evaluateUserCommand . P.privmsg chan
 
+act :: String -> String -> IRC ()
+act chan = write . P.evaluateUserCommand . P.act chan
+
 configuratedCommand :: String -> String -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
 configuratedCommand nick channel (comm:args) = do
@@ -42,10 +46,13 @@ configuratedCommand nick channel (comm:args) = do
       let command = commands !! (random `mod` length commands)
       argsReplace <- replaceArgs name
       let reply = replaceAll (pack command) [("@nick",nick), ("@channel",channel), ("@args",argsReplace)]
-      privmsg channel (unpack reply)
+      if "/me" `isPrefixOf` reply then
+        act channel $ drop 4 reply
+      else
+        privmsg channel reply
   where
-    replaceAll :: Text -> [(String,String)] -> Text
-    replaceAll = foldl (\text (pattern,repl) -> replace (pack pattern) (pack repl) text)
+    replaceAll :: Text -> [(String,String)] -> String
+    replaceAll command = unpack . foldl (\text (pattern,repl) -> replace (pack pattern) (pack repl) text) command
     
     replaceArgs :: String -> IRC String
     replaceArgs name  = do

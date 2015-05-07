@@ -94,3 +94,5 @@ privmsg channel msg = UserCommand { ucommand = "PRIVMSG"
                                   , middles  = pure channel
                                   , trailing = Just msg
                                   }
+act :: String -> String -> UserCommand
+act channel msg = privmsg channel ('\x0001' : "ACTION " ++ msg ++ "\x0001")
