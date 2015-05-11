@@ -15,9 +15,7 @@ import Control.Concurrent.Timer (oneShotTimer)
 import Control.Concurrent.Suspend.Lifted
 
 import Data.Text (Text, pack, unpack, replace)
-import Data.Maybe (fromMaybe)
-import Data.List (isPrefixOf)
-import Data.Int
+import Data.Maybe (fromMaybe, listToMaybe)
 
 import Text.Read
 
@@ -41,44 +39,42 @@ privmsg chan = write . P.evaluateUserCommand . P.privmsg chan
 
 act :: String -> String -> IRC ()
 act chan = write . P.evaluateUserCommand . P.act chan
-
+-------------------------------------------------------------
 configuratedCommand :: String -> String -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
 configuratedCommand nick channel (comm:args) = do
-    let name = "Commands." ++ comm
-    commands <- fromMaybe [] <$> lookupGlobalConfig (name ++ ".reply")
+    commands <- fromMaybe [] <$> lookupGlobalConfig ("Commands." ++ comm ++ ".reply")
     unless (null commands) $ do
       random <- liftIO randomIO
       let command = commands !! (random `mod` length commands)
-      argsReplace <- replaceArgs name
-      let reply = replaceAll (pack command) [("@nick@",nick), ("@channel@",channel), ("@args@",argsReplace)]
-      mapM_ executeLine $ lines reply
+      forM_ (lines command) $ \rawline -> do
+        line <- replaceVars rawline
+        case listToMaybe (words rawline) of
+          Nothing -> return ()
+          Just "/me"    -> act channel $ drop 4 line
+          Just "/delay" -> executeDelay line
+          Just _        -> privmsg channel line
   where
-    executeLine :: String -> IRC ()
-    executeLine line | "/me" `isPrefixOf` line    = act channel $ drop 4 line
-                     | "/delay" `isPrefixOf` line = executeDelay line
-                     | otherwise                  = privmsg channel line
     executeDelay :: String -> IRC ()
-    executeDelay line = do
-              let (time:reply) = drop 1 $ words line
-              let delay = readMaybe time :: Maybe Int64
-              case delay of
-                Nothing -> privmsg channel $ time ++ " is not a valid time"
-                Just seconds -> delayReply (sDelay seconds) $ privmsg channel (unwords reply)
+    executeDelay line = case drop 1 $ words line of
+             (time:reply) -> case readMaybe time of
+                               Nothing -> privmsg channel $ time ++ " is not a valid time"
+                               Just seconds -> delayReply (sDelay seconds) $ privmsg channel (unwords reply)
+             _ -> return ()
 
-    replaceAll :: Text -> [(String,String)] -> String
-    replaceAll command = unpack . foldl (\text (pattern,repl) -> replace (pack pattern) (pack repl) text) command
-    
-    replaceArgs :: String -> IRC String
-    replaceArgs name  = do
-      setting <- return . fromMaybe False =<< lookupGlobalConfig (name ++ ".replaceEmptyArgsWithNick")
-      if setting && null args then
-        return nick
-      else
-        return (unwords args)
+    replaceVars :: String -> IRC String
+    replaceVars line = let replaceAll command = unpack . foldl (\text (pattern,repl) -> replace (pack pattern) (pack repl) text) command in
+                           replaceArgs >>= \argsr -> return $ replaceAll (pack line) [("@nick@",nick), ("@channel@",channel), ("@args@",argsr)]
+  
+    replaceArgs :: IRC String
+    replaceArgs = do
+      setting <- return . fromMaybe False =<< lookupGlobalConfig ("Commands." ++ comm ++ ".replaceEmptyArgsWithNick")
+      case (setting, null args) of
+        (True, True) -> return nick
+        _            -> return (unwords args)
 
-delayReply :: Delay -> IRC () -> IRC ()
-delayReply delay reply = do
-  handle <- ask
-  _ <- liftIO $ flip oneShotTimer delay $ runReaderT reply handle
-  return ()
+    delayReply :: Delay -> IRC () -> IRC ()
+    delayReply delay reply = do
+      handle <- ask
+      _ <- liftIO $ flip oneShotTimer delay $ runReaderT reply handle
+      return ()
