@@ -45,7 +45,7 @@ configuratedCommand nick channel (comm:args) = do
       random <- liftIO randomIO
       let command = commands !! (random `mod` length commands)
       argsReplace <- replaceArgs name
-      let reply = replaceAll (pack command) [("@nick",nick), ("@channel",channel), ("@args",argsReplace)]
+      let reply = replaceAll (pack command) [("@nick@",nick), ("@channel@",channel), ("@args@",argsReplace)]
       if "/me" `isPrefixOf` reply then
         act channel $ drop 4 reply
       else
