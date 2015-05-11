@@ -34,13 +34,5 @@ onPrivmsg _ = return ()
 onCommand :: String -> String -> [String] -> IRC ()
 onCommand _ _ [] = return ()
 onCommand nick channel commands@(cmd:_args)
-    | cmd == "pizza"   = pizza
     | cmd == "time"    = liftIO getCurrentTime >>= privmsg channel . show
     | otherwise        = configuratedCommand nick channel commands
-  where
-    pizza = do
-      privmsg channel $ nick ++ ", ich geb dir bescheid, sobald deine Pizza fertig ist."
-      handle <- ask
-      _ <- liftIO . flip oneShotTimer (mDelay 15) . flip runReaderT handle $
-        privmsg channel $ nick ++ ", hey, aufwachen! Schlafmütze! Deine Pizza ist fertig!"
-      return ()
