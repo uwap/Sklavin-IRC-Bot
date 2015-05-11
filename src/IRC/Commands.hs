@@ -69,7 +69,7 @@ configuratedCommand nick channel (comm:args) = do
       let replaceAll = foldl (flip (uncurry replace))
       argsr <- replaceArgs
       time <- liftIO getCurrentTime 
-      return $ replaceAll line [("@nick@",nick), ("@channel@",channel), ("@args@",argsr), ("@time@",show time)]
+      return $ replaceAll line [("@nick@",nick), ("@channel@",channel), ("@time@",show time), ("@args@",argsr)]
   
     replaceArgs :: IRC String
     replaceArgs = do
