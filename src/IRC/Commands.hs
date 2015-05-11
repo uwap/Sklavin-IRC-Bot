@@ -17,6 +17,7 @@ import Control.Concurrent.Suspend.Lifted
 import Data.Text (Text, pack, unpack)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.String.Utils (replace)
+import Data.Time.Clock
 
 import Text.Read
 
@@ -64,8 +65,11 @@ configuratedCommand nick channel (comm:args) = do
              _ -> return ()
 
     replaceVars :: String -> IRC String
-    replaceVars line = let replaceAll = foldl (flip (uncurry replace)) in
-                           replaceArgs >>= \argsr -> return $ replaceAll line [("@nick@",nick), ("@channel@",channel), ("@args@",argsr)]
+    replaceVars line = do
+      let replaceAll = foldl (flip (uncurry replace))
+      argsr <- replaceArgs
+      time <- liftIO getCurrentTime 
+      return $ replaceAll line [("@nick@",nick), ("@channel@",channel), ("@args@",argsr), ("@time@",show time)]
   
     replaceArgs :: IRC String
     replaceArgs = do

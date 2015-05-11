@@ -7,12 +7,8 @@ import IRC.Commands
 import IRC.Proto (parseUserHost)
 import IRC.Logging
 
-import Data.Time.Clock
-
 import Control.Monad.Reader (liftIO)
 import Control.Monad.Trans.Reader
-import Control.Concurrent.Timer (oneShotTimer)
-import Control.Concurrent.Suspend.Lifted
 
 main :: IO ()
 main = start eventListener
@@ -33,6 +29,4 @@ onPrivmsg _ = return ()
 
 onCommand :: String -> String -> [String] -> IRC ()
 onCommand _ _ [] = return ()
-onCommand nick channel commands@(cmd:_args)
-    | cmd == "time"    = liftIO getCurrentTime >>= privmsg channel . show
-    | otherwise        = configuratedCommand nick channel commands
+onCommand nick channel commands = configuratedCommand nick channel commands
