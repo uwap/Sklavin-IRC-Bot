@@ -14,8 +14,9 @@ import Control.Monad.Trans.Reader
 import Control.Concurrent.Timer (oneShotTimer)
 import Control.Concurrent.Suspend.Lifted
 
-import Data.Text (Text, pack, unpack, replace)
+import Data.Text (Text, pack, unpack)
 import Data.Maybe (fromMaybe, listToMaybe)
+import Data.String.Utils (replace)
 
 import Text.Read
 
@@ -63,8 +64,8 @@ configuratedCommand nick channel (comm:args) = do
              _ -> return ()
 
     replaceVars :: String -> IRC String
-    replaceVars line = let replaceAll command = unpack . foldl (\text (pattern,repl) -> replace (pack pattern) (pack repl) text) command in
-                           replaceArgs >>= \argsr -> return $ replaceAll (pack line) [("@nick@",nick), ("@channel@",channel), ("@args@",argsr)]
+    replaceVars line = let replaceAll = foldl (flip (uncurry replace)) in
+                           replaceArgs >>= \argsr -> return $ replaceAll line [("@nick@",nick), ("@channel@",channel), ("@args@",argsr)]
   
     replaceArgs :: IRC String
     replaceArgs = do
