@@ -46,10 +46,11 @@ configuratedCommand nick channel (comm:args) = do
       let command = commands !! (random `mod` length commands)
       argsReplace <- replaceArgs name
       let reply = replaceAll (pack command) [("@nick@",nick), ("@channel@",channel), ("@args@",argsReplace)]
-      if "/me" `isPrefixOf` reply then
-        act channel $ drop 4 reply
-      else
-        privmsg channel reply
+      forM_ (lines reply) $ \line -> do
+        if "/me" `isPrefixOf` line then
+          act channel $ drop 4 line
+        else
+          privmsg channel line
   where
     replaceAll :: Text -> [(String,String)] -> String
     replaceAll command = unpack . foldl (\text (pattern,repl) -> replace (pack pattern) (pack repl) text) command
