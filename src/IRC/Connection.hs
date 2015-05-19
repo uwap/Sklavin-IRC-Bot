@@ -26,11 +26,7 @@ start eventListener = do
 
 spawnThreads :: [String] -> Config -> (RawMessage -> IRC ()) -> IO ()
 spawnThreads servers conf eventListener = do
-    children <- forM servers $ \server -> do
-      m <- newEmptyMVar
-      _ <- forkFinally (spawnThread server) $
-        either (\e -> print e >> putMVar m () >> void (spawnThread server)) (const . void $ spawnThread server)
-      return m
+    children <- forM servers spawnThread
     forM_ children takeMVar
   where
     spawnThread server = do
