@@ -18,6 +18,8 @@ import Control.Monad
 import Control.Monad.Reader (asks, liftIO, runReaderT)
 import Control.Concurrent
 
+data ThreadReturn = Restart | Finish
+
 start :: (RawMessage -> IRC ()) -> IO ()
 start eventListener = do
   conf <- loadConfig
@@ -31,8 +33,11 @@ spawnThreads servers conf eventListener = do
   where
     spawnThread server = do
       m <- newEmptyMVar
-      _ <- forkFinally (runThread server) $
-        either (\e -> print e >> putMVar m () >> void (spawnThread server)) (const . void $ spawnThread server)
+      _ <- forkFinally (runThread server) $ \eith -> case eith of
+        Left e -> print e >> void (spawnThread server)
+        Right r -> case r of
+                     Restart -> void (spawnThread server)
+                     Finish  -> putMVar m ()
       return m
     runThread server = do
       irc <- connectTo server conf eventListener
@@ -53,20 +58,21 @@ write s = do
     hPrintf h "%s\r\n" s
     printf "» %s\r\n" s
 
-run :: IRC ()
+run :: IRC ThreadReturn
 run = do
   nick <- fromJust <$> lookupServerConfig "nick"
   write $ "NICK " ++ nick
   write $ "USER " ++ nick ++ " 0 * :" ++ nick
   listen
 
-listen :: IRC ()
+listen :: IRC ThreadReturn
 listen = forever $ do
   h <- asks socket
   s <- liftIO $ hGetLine h
   liftIO $ putStrLn s
   eventListener <- asks listener
   eventListener $ parseCommand s
+  return Restart
 
 disconnect :: Maybe String -> IRC ()
 disconnect m = do
