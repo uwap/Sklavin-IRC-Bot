@@ -29,11 +29,16 @@ spawnThreads servers conf eventListener = do
     children <- forM servers $ \server -> do
       m <- newEmptyMVar
       _ <- forkFinally (spawnThread server) $
-        either (\e -> print e >> putMVar m ()) (const $ putMVar m ())
+        either (\e -> print e >> putMVar m () >> void (spawnThread server)) (const . void $ spawnThread server)
       return m
     forM_ children takeMVar
   where
     spawnThread server = do
+      m <- newEmptyMVar
+      _ <- forkFinally (runThread server) $
+        either (\e -> print e >> putMVar m () >> void (spawnThread server)) (const . void $ spawnThread server)
+      return m
+    runThread server = do
       irc <- connectTo server conf eventListener
       runReaderT run irc
 
