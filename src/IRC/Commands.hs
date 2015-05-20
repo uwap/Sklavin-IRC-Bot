@@ -62,7 +62,7 @@ configuratedCommand nick channel (comm:args) = do
     executeDelay line = case drop 1 $ words line of
              (time:reply) -> case asSeconds time of
                                Nothing -> privmsg channel $ time ++ " is not a valid time"
-                               Just seconds -> delayReply (sDelay seconds) $ privmsg channel (unwords reply)
+                               Just seconds -> delayReply (sDelay $ round seconds) $ privmsg channel (unwords reply)
              _ -> return ()
 
     replaceVars :: String -> IRC String
