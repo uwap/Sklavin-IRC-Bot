@@ -18,6 +18,7 @@ import Data.Text (Text, pack, unpack)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.String.Utils (replace)
 import Data.Time.Clock
+import Data.List (isSuffixOf)
 
 import Text.Read
 
@@ -59,7 +60,7 @@ configuratedCommand nick channel (comm:args) = do
   where
     executeDelay :: String -> IRC ()
     executeDelay line = case drop 1 $ words line of
-             (time:reply) -> case readMaybe time of
+             (time:reply) -> case asSeconds time of
                                Nothing -> privmsg channel $ time ++ " is not a valid time"
                                Just seconds -> delayReply (sDelay seconds) $ privmsg channel (unwords reply)
              _ -> return ()
@@ -83,3 +84,9 @@ configuratedCommand nick channel (comm:args) = do
       handle <- ask
       _ <- liftIO $ flip oneShotTimer delay $ runReaderT reply handle
       return ()
+
+asSeconds :: (Num a, Read a) => String -> Maybe a
+asSeconds str | "s" `isSuffixOf` str = readMaybe (init str)
+asSeconds str | "m" `isSuffixOf` str = (*60)   <$> readMaybe (init str)
+asSeconds str | "h" `isSuffixOf` str = (*3600) <$> readMaybe (init str)
+asSeconds str                        = readMaybe str
