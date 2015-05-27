@@ -19,6 +19,7 @@ import Data.Maybe (fromMaybe, listToMaybe)
 import Data.String.Utils (replace)
 import Data.Time.Clock
 import Data.List (isSuffixOf)
+import Data.List.Split
 
 import Text.Read
 
@@ -54,9 +55,10 @@ configuratedCommand nick channel (comm:args) = do
         line <- replaceVars rawline
         case listToMaybe (words rawline) of
           Nothing -> return ()
-          Just "/me"    -> act channel $ drop 4 line
-          Just "/delay" -> executeDelay line
-          Just _        -> privmsg channel line
+          Just "/me"     -> act channel $ drop 4 line
+          Just "/delay"  -> executeDelay line
+          Just "/choose" -> choose line
+          Just _         -> privmsg channel line
   where
     executeDelay :: String -> IRC ()
     executeDelay line = case drop 1 $ words line of
@@ -84,6 +86,18 @@ configuratedCommand nick channel (comm:args) = do
       handle <- ask
       _ <- liftIO $ flip oneShotTimer delay $ runReaderT reply handle
       return ()
+
+    choose :: String -> IRC ()
+    choose s = do
+        let str = unwords (drop 1 $ words s)
+        let list = trim <$> splitOneOf ",;" str
+        privmsg channel =<< pickRandom list
+      where
+        trim :: String -> String
+        trim s = dropWhile (==' ') $ reverse $ dropWhile (==' ') $ reverse s
+
+pickRandom :: [String] -> IRC String
+pickRandom list = liftIO randomIO >>= \r -> return $ list !! (r `mod` length list)
 
 asSeconds :: (Num a, Read a) => String -> Maybe a
 asSeconds str | "s" `isSuffixOf` str = readMaybe (init str)
