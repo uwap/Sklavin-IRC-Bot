@@ -16,11 +16,11 @@ main = start eventListener
 eventListener :: RawMessage -> IRC ()
 eventListener (RawMessage _ "PING" s)         = pong (head s)
 eventListener (RawMessage _ "INVITE" chan)    = mapM_ joinChannel $ tail chan
-eventListener msg@(RawMessage _ "PRIVMSG" _)  = onPrivmsg msg
-eventListener _                               = return ()
+eventListener msg@(RawMessage _ "PRIVMSG" _)  = logMessage msg >> onPrivmsg msg
+eventListener msg                             = logMessage msg
 
 onPrivmsg :: RawMessage -> IRC ()
-onPrivmsg (RawMessage (Just source) _ (channel:message)) = do
+onPrivmsg msg@(RawMessage (Just source) _ (channel:message)) = do
       let (n, _, _) = parseUserHost source
       case unwords message of
         ('!':xs) -> onCommand n channel $ words xs
