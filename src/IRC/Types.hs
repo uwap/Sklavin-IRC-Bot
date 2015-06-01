@@ -4,14 +4,14 @@ import System.IO (Handle)
 import Control.Monad.Reader
 import Data.Configurator.Types
 
-type Nick    = String
+type User    = String
 type Name    = String
 type Channel = String
 type Host    = String
 
 type IRC = ReaderT Irc IO
 data Irc = Irc { socket     :: Handle
-               , listener   :: RawMessage -> IRC ()
+               , listeners  :: [Message -> IRC ()]
                , config     :: Config
                , serverName :: String
                }
@@ -25,3 +25,8 @@ data RawMessage = RawMessage { prefix  :: Maybe String
                              , command :: String
                              , params  :: [String]
                              }
+
+data Message = Privmsg Channel User String
+             | Ping String
+             | Invite User Channel
+             | Raw RawMessage

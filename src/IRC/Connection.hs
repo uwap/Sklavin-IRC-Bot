@@ -19,14 +19,14 @@ import Control.Concurrent
 
 data ThreadReturn = Restart | Finish
 
-start :: (RawMessage -> IRC ()) -> IO ()
-start eventListener = do
+start :: [Message -> IRC ()] -> IO ()
+start eventListeners = do
   conf <- loadConfig
   servers <- require conf "servers" :: IO [String]
-  spawnThreads servers conf eventListener
+  spawnThreads servers conf eventListeners
 
-spawnThreads :: [String] -> Config -> (RawMessage -> IRC ()) -> IO ()
-spawnThreads servers conf eventListener = do
+spawnThreads :: [String] -> Config -> [Message -> IRC ()] -> IO ()
+spawnThreads servers conf eventListeners = do
     children <- forM servers spawnThread
     forM_ children takeMVar
   where
@@ -39,16 +39,16 @@ spawnThreads servers conf eventListener = do
                      Finish  -> putMVar m ()
       return m
     runThread server = do
-      irc <- connectTo server conf eventListener
+      irc <- connectTo server conf eventListeners
       runReaderT run irc
 
-connectTo :: String -> Config -> (RawMessage -> IRC ()) -> IO Irc
-connectTo server conf eventListener = do
+connectTo :: String -> Config -> [Message -> IRC ()] -> IO Irc
+connectTo server conf eventListeners = do
   addr <- require conf $ pack (server ++ ".server") :: IO String
   port <- require conf $ pack (server ++ ".port") :: IO Int
   h <- N.connectTo addr (N.PortNumber $ fromIntegral port)
   hSetBuffering h NoBuffering
-  return $ Irc h eventListener conf server
+  return $ Irc h eventListeners conf server
 
 run :: IRC ThreadReturn
 run = do
@@ -62,8 +62,8 @@ listen = forever $ do
   h <- asks socket
   s <- liftIO $ hGetLine h
   liftIO $ putStrLn s
-  eventListener <- asks listener
-  eventListener $ parseCommand s
+  eventListeners <- asks listeners
+  sequence_ $ eventListeners <*> return (fromRawMessage $ parseCommand s)
   return Restart
 
 disconnect :: IRC ()

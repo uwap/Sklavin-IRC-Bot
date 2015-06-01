@@ -15,7 +15,7 @@ write s = do
 {--------------------------------------------------------------}
 {--------------------------- Parsing --------------------------}
 {--------------------------------------------------------------}
-parseUserHost :: String -> (Nick, Name, Host) -- Nick, Name, Host
+parseUserHost :: String -> (User, Name, Host) -- User, Name, Host
 parseUserHost s = (nick s, name s, host s)
   where
     nick = takeWhile (/= '!')
@@ -53,7 +53,17 @@ parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
                         take 14 mids ++ (return . unwords) (drop 14 mids)
               parseMiddles'  = words . takeWhile (/= ':')
               parseTrailing  = drop 1 . dropWhile (/= ':')
-              
+
+{--------------------------------------------------------------}
+{--------------------------- Message --------------------------}
+{--------------------------------------------------------------}
+fromRawMessage :: RawMessage -> Message
+fromRawMessage (RawMessage (Just source) "PRIVMSG" (channel:message)) =
+  let (user, _, _) = parseUserHost source in Privmsg channel user (unwords message)
+fromRawMessage (RawMessage _ "PING" code)             = Ping (unwords code)
+fromRawMessage (RawMessage _ "INVITE" (nick:channel)) = Invite nick (unwords channel)
+fromRawMessage msg                                    = Raw msg
+
 {--------------------------------------------------------------}
 {------------------------ User Commands -----------------------}
 {--------------------------------------------------------------}
@@ -63,14 +73,14 @@ away awayMessage = write $ "AWAY " ++ awayMessage
 back :: IRC ()
 back = write "AWAY"
 
-invite :: Nick -> Channel -> IRC ()
+invite :: User -> Channel -> IRC ()
 invite nick channel = write $ "INVITE " ++ unwords [nick, channel]
 
 quit :: String -> IRC ()
 quit quitMessage = write $ "QUIT :" ++ quitMessage
 
-join :: Channel -> IRC ()
-join channel = write $ "JOIN " ++ channel
+joinChannel :: Channel -> IRC ()
+joinChannel channel = write $ "JOIN " ++ channel
 
 pong :: String -> IRC ()
 pong code = write $ "PONG :" ++ code

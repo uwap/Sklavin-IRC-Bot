@@ -21,7 +21,7 @@ import Data.List.Split
 
 import Text.Read
 
-configuratedCommand :: String -> String -> [String] -> IRC ()
+configuratedCommand :: User -> Channel -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
 configuratedCommand nick channel (comm:args) = do
     commands <- fromMaybe [] <$> lookupGlobalConfig ("Commands." ++ comm ++ ".reply")

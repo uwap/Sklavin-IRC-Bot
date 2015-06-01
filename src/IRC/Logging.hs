@@ -2,7 +2,6 @@ module IRC.Logging where
 
 import IRC.Types
 import IRC.Config
-import IRC.Proto (parseUserHost)
 
 import System.Directory
 import System.FilePath
@@ -24,12 +23,11 @@ logFile chan = do
     fromBool a True  = Just a
     fromBool _ False = Nothing
 
-logMessage :: RawMessage -> IRC ()
-logMessage (RawMessage (Just source) "PRIVMSG" (channel:message)) = do
-    filepath <- logFile channel
-    let (n, _, _) = parseUserHost source
+logMessage :: Message -> IRC ()
+logMessage (Privmsg chan user message) = do
+    filepath <- logFile chan
     time <- liftIO getZonedTime 
     liftIO $ case filepath of
-      Just path -> appendFile path ("[" ++ show time ++ "] <" ++ n ++ "> " ++ unwords message ++ "\n")
+      Just path -> appendFile path ("[" ++ show time ++ "] <" ++ user ++ "> " ++ message ++ "\n")
       Nothing   -> return ()
 logMessage _ = return ()
