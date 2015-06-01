@@ -1,13 +1,21 @@
 module IRC.Proto where
 
 import IRC.Types
-import Data.Foldable (toList)
+import Text.Printf (hPrintf)
+import Control.Monad.Reader (asks, liftIO)
+
+{--------------------------------------------------------------}
+{-------------------------- Connection ------------------------}
+{--------------------------------------------------------------}
+write :: String -> IRC ()
+write s = do
+    h <- asks socket
+    liftIO $ hPrintf h "%s\r\n" s
 
 {--------------------------------------------------------------}
 {--------------------------- Parsing --------------------------}
 {--------------------------------------------------------------}
-
-parseUserHost :: String -> (String, String, String) -- Nick, Name, Host
+parseUserHost :: String -> (Nick, Name, Host) -- Nick, Name, Host
 parseUserHost s = (nick s, name s, host s)
   where
     nick = takeWhile (/= '!')
@@ -31,15 +39,6 @@ parseCommand s = RawMessage Nothing (cmd s) (parameters s)
                     parameters = parseParams . dropWhile (/= ' ')
 {--
  Parsing Params is more complicated then parsing command or source.
- Therefor we add an extra parsing function.
- There are various cases to handle:
- 1. There aren't any parameters
- 2. There are up to 14 parameters
- 3. There are up to 14 parameters and then a trailing parameter
- 4. There is just a trailing parameter
- 5. There are 14 parameters and then a trailing paramter
- 6. There are 14 parameters and a trailing parameter without a colon
- 
  In RFC2812 params are described as follows:
     params     =  *14( SPACE middle ) [ SPACE ":" trailing ]
                =/ 14( SPACE middle ) [ SPACE [ ":" ] trailing ]
@@ -58,41 +57,26 @@ parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
 {--------------------------------------------------------------}
 {------------------------ User Commands -----------------------}
 {--------------------------------------------------------------}
-evaluateUserCommand :: UserCommand -> String
-evaluateUserCommand (UserCommand cmd mids Nothing) = cmd ++ " " ++ unwords mids
-evaluateUserCommand (UserCommand cmd mids (Just trail)) = cmd ++ " " ++ unwords mids ++ " :" ++ trail
+away :: String -> IRC ()
+away awayMessage = write $ "AWAY " ++ awayMessage
 
-away :: Maybe String -> UserCommand
-away message = UserCommand { ucommand = "AWAY"
-                           , middles  = toList message
-                           , trailing = Nothing
-                           }
+back :: IRC ()
+back = write "AWAY"
 
-invite :: String -> String -> UserCommand
-invite nick channel = UserCommand { ucommand = "INVITE"
-                                  , middles  = [nick, channel]
-                                  , trailing = Nothing
-                                  }
+invite :: Nick -> Channel -> IRC ()
+invite nick channel = write $ "INVITE " ++ unwords [nick, channel]
 
-quit :: Maybe String -> UserCommand
-quit = UserCommand "QUIT" []
+quit :: String -> IRC ()
+quit quitMessage = write $ "QUIT :" ++ quitMessage
 
-join :: String -> UserCommand
-join channel = UserCommand { ucommand = "JOIN"
-                           , middles  = pure channel
-                           , trailing = Nothing
-                           }
+join :: Channel -> IRC ()
+join channel = write $ "JOIN " ++ channel
 
-pong :: String -> UserCommand
-pong code = UserCommand { ucommand = "PONG"
-                        , middles  = []
-                        , trailing = Just code
-                        }
+pong :: String -> IRC ()
+pong code = write $ "PONG :" ++ code
 
-privmsg :: String -> String -> UserCommand
-privmsg channel msg = UserCommand { ucommand = "PRIVMSG"
-                                  , middles  = pure channel
-                                  , trailing = Just msg
-                                  }
-act :: String -> String -> UserCommand
+privmsg :: Channel -> String -> IRC ()
+privmsg channel msg = write $ "PRIVMSG " ++ channel ++ " :" ++ msg
+
+act :: Channel -> String -> IRC ()
 act channel msg = privmsg channel ('\x0001' : "ACTION " ++ msg ++ "\x0001")

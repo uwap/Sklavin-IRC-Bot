@@ -4,6 +4,11 @@ import System.IO (Handle)
 import Control.Monad.Reader
 import Data.Configurator.Types
 
+type Nick    = String
+type Name    = String
+type Channel = String
+type Host    = String
+
 type IRC = ReaderT Irc IO
 data Irc = Irc { socket     :: Handle
                , listener   :: RawMessage -> IRC ()

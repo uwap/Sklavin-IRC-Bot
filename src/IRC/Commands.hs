@@ -2,9 +2,8 @@
 module IRC.Commands where
 
 import IRC.Types
-import IRC.Connection
 import IRC.Config
-import qualified IRC.Proto as P
+import IRC.Proto
 
 import System.Random (randomIO)
 
@@ -22,27 +21,6 @@ import Data.List.Split
 
 import Text.Read
 
-away :: String -> IRC ()
-away = write . P.evaluateUserCommand . P.away . Just
-
-back :: IRC ()
-back = write . P.evaluateUserCommand $ P.away Nothing
-
-invite :: String -> String -> IRC ()
-invite nick chan = write . P.evaluateUserCommand $ P.invite nick chan
-
-joinChannel :: String -> IRC ()
-joinChannel chan = write . P.evaluateUserCommand $ P.join chan
-
-pong :: String -> IRC ()
-pong = write . P.evaluateUserCommand . P.pong
-
-privmsg :: String -> String -> IRC ()
-privmsg chan = write . P.evaluateUserCommand . P.privmsg chan
-
-act :: String -> String -> IRC ()
-act chan = write . P.evaluateUserCommand . P.act chan
--------------------------------------------------------------
 configuratedCommand :: String -> String -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
 configuratedCommand nick channel (comm:args) = do

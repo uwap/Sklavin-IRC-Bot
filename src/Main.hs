@@ -4,7 +4,7 @@ module Main where
 import IRC.Types
 import IRC.Connection
 import IRC.Commands
-import IRC.Proto (parseUserHost)
+import IRC.Proto
 import IRC.Logging
 
 main :: IO ()
@@ -12,7 +12,7 @@ main = start eventListener
 
 eventListener :: RawMessage -> IRC ()
 eventListener (RawMessage _ "PING" s)         = pong (head s)
-eventListener (RawMessage _ "INVITE" chan)    = mapM_ joinChannel $ tail chan
+eventListener (RawMessage _ "INVITE" chan)    = mapM_ join $ tail chan
 eventListener msg@(RawMessage _ "PRIVMSG" _)  = logMessage msg >> onPrivmsg msg
 eventListener msg                             = logMessage msg
 

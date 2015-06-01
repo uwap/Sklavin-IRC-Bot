@@ -12,7 +12,6 @@ import Data.Text
 import Data.Maybe
 
 import System.IO (hSetBuffering, BufferMode(NoBuffering), hGetLine, hClose)
-import Text.Printf (hPrintf, printf)
 
 import Control.Monad
 import Control.Monad.Reader (asks, liftIO, runReaderT)
@@ -51,13 +50,6 @@ connectTo server conf eventListener = do
   hSetBuffering h NoBuffering
   return $ Irc h eventListener conf server
 
-write :: String -> IRC ()
-write s = do
-  h <- asks socket
-  liftIO $ do
-    hPrintf h "%s\r\n" s
-    printf "» %s\r\n" s
-
 run :: IRC ThreadReturn
 run = do
   nick <- fromJust <$> lookupServerConfig "nick"
@@ -74,8 +66,7 @@ listen = forever $ do
   eventListener $ parseCommand s
   return Restart
 
-disconnect :: Maybe String -> IRC ()
-disconnect m = do
-  write . evaluateUserCommand $ quit m
+disconnect :: IRC ()
+disconnect = do
   h <- asks socket
   liftIO $ hClose h
