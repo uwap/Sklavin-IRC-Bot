@@ -7,9 +7,6 @@ import IRC.Commands
 import IRC.Proto (parseUserHost)
 import IRC.Logging
 
-import Control.Monad.Reader (liftIO)
-import Control.Monad.Trans.Reader
-
 main :: IO ()
 main = start eventListener
 
@@ -20,7 +17,7 @@ eventListener msg@(RawMessage _ "PRIVMSG" _)  = logMessage msg >> onPrivmsg msg
 eventListener msg                             = logMessage msg
 
 onPrivmsg :: RawMessage -> IRC ()
-onPrivmsg msg@(RawMessage (Just source) _ (channel:message)) = do
+onPrivmsg (RawMessage (Just source) _ (channel:message)) = do
       let (n, _, _) = parseUserHost source
       case unwords message of
         ('!':xs) -> onCommand n channel $ words xs

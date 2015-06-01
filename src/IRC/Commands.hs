@@ -14,7 +14,6 @@ import Control.Monad.Trans.Reader
 import Control.Concurrent.Timer (oneShotTimer)
 import Control.Concurrent.Suspend.Lifted
 
-import Data.Text (Text, pack, unpack)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.String.Utils (replace)
 import Data.Time.Clock
@@ -50,8 +49,8 @@ configuratedCommand nick channel (comm:args) = do
     commands <- fromMaybe [] <$> lookupGlobalConfig ("Commands." ++ comm ++ ".reply")
     unless (null commands) $ do
       random <- liftIO randomIO
-      let command = commands !! (random `mod` length commands)
-      forM_ (lines command) $ \rawline -> do
+      let cmd = commands !! (random `mod` length commands)
+      forM_ (lines cmd) $ \rawline -> do
         line <- replaceVars rawline
         case listToMaybe (words rawline) of
           Nothing -> return ()
@@ -62,8 +61,8 @@ configuratedCommand nick channel (comm:args) = do
   where
     executeDelay :: String -> IRC ()
     executeDelay line = case drop 1 $ words line of
-             (time:reply) -> case asSeconds time of
-                               Nothing -> privmsg channel $ time ++ " is not a valid time"
+             (time:reply) -> case asSeconds time :: Maybe Double of
+                               Nothing      -> privmsg channel $ time ++ " is not a valid time"
                                Just seconds -> delayReply (sDelay $ round seconds) $ privmsg channel (unwords reply)
              _ -> return ()
 
@@ -94,7 +93,7 @@ configuratedCommand nick channel (comm:args) = do
         privmsg channel =<< pickRandom list
       where
         trim :: String -> String
-        trim s = dropWhile (==' ') $ reverse $ dropWhile (==' ') $ reverse s
+        trim = dropWhile (==' ') . reverse . dropWhile (==' ') . reverse
 
 pickRandom :: [String] -> IRC String
 pickRandom list = liftIO randomIO >>= \r -> return $ list !! (r `mod` length list)

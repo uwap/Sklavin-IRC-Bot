@@ -50,8 +50,8 @@ parseCommand s = RawMessage Nothing (cmd s) (parameters s)
 parseParams :: String -> [String]
 parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
             where
-              parseMiddles   = let middles = filter (not . null) $ parseMiddles' s in
-                        take 14 middles ++ (return . unwords) (drop 14 middles)
+              parseMiddles   = let mids = filter (not . null) $ parseMiddles' s in
+                        take 14 mids ++ (return . unwords) (drop 14 mids)
               parseMiddles'  = words . takeWhile (/= ':')
               parseTrailing  = drop 1 . dropWhile (/= ':')
               
