@@ -28,20 +28,25 @@ configuratedCommand nick channel (comm:args) = do
     unless (null commands) $ do
       random <- liftIO randomIO
       let cmd = commands !! (random `mod` length commands)
-      forM_ (lines cmd) $ \rawline -> do
-        line <- replaceVars rawline
-        case listToMaybe (words rawline) of
-          Nothing -> return ()
-          Just "/me"     -> act channel $ drop 4 line
-          Just "/delay"  -> executeDelay line
-          Just "/choose" -> choose line
-          Just _         -> privmsg channel line
+      forM_ (lines cmd) evaluateLine 
   where
+    evaluateLine :: String -> IRC ()
+    evaluateLine rawline = do
+      line <- replaceVars rawline
+      case listToMaybe (words rawline) of
+        Nothing -> return ()
+        Just "/me"     -> act channel $ drop 4 line
+        Just "/delay"  -> executeDelay $ drop 7 rawline
+        Just "/choose" -> choose $ drop 8 line
+        Just _         -> privmsg channel line
+
     executeDelay :: String -> IRC ()
-    executeDelay line = case drop 1 $ words line of
-             (time:reply) -> case asSeconds time :: Maybe Double of
-                               Nothing      -> privmsg channel $ time ++ " is not a valid time"
-                               Just seconds -> delayReply (sDelay $ round seconds) $ privmsg channel (unwords reply)
+    executeDelay line = case words line of
+             (time:reply) -> do
+               realtime <- replaceVars time
+               case asSeconds realtime :: Maybe Double of
+                 Nothing      -> privmsg channel $ time ++ " is not a valid time"
+                 Just seconds -> delayReply (sDelay $ round seconds) $ evaluateLine (unwords reply)
              _ -> return ()
 
     replaceVars :: String -> IRC String
@@ -65,8 +70,7 @@ configuratedCommand nick channel (comm:args) = do
       return ()
 
     choose :: String -> IRC ()
-    choose s = do
-        let str = unwords (drop 1 $ words s)
+    choose str = do
         let list = trim <$> splitOneOf ",;" str
         privmsg channel =<< pickRandom list
       where
