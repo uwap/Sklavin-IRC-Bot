@@ -59,14 +59,14 @@ parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
 {--------------------------------------------------------------}
 fromRawMessage :: RawMessage -> Message
 fromRawMessage msg = do
-  let (user, _, _) = case source msg of {
+  let (user, _, _) = case prefix msg of {
       Just s  -> parseUserHost s;
       Nothing -> ("UNKNOWN", "UNKNOWN", "UNKNOWN") }
   case msg of
     (RawMessage _ "PRIVMSG" (channel:message)) -> Privmsg channel user (unwords message)
     (RawMessage _ "PING" code)                 -> Ping (unwords code)
     (RawMessage _ "INVITE" (nick:channel))     -> Invite nick (unwords channel)
-    (RawMessage _ "QUIT" msg)                  -> Quit user msg 
+    (RawMessage _ "QUIT" message)              -> Quit user (unwords message)
     _                                          -> Raw msg
 
 {--------------------------------------------------------------}
