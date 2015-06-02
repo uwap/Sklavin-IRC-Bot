@@ -29,4 +29,5 @@ data RawMessage = RawMessage { prefix  :: Maybe String
 data Message = Privmsg Channel User String
              | Ping String
              | Invite User Channel
+             | Quit User String
              | Raw RawMessage

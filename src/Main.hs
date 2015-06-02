@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
 module Main where
 
 import IRC.Types

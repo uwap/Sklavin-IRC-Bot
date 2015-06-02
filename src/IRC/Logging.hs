@@ -24,10 +24,15 @@ logFile chan = do
     fromBool _ False = Nothing
 
 logMessage :: Message -> IRC ()
-logMessage (Privmsg chan user message) = do
-    filepath <- logFile chan
-    time <- liftIO getZonedTime 
-    liftIO $ case filepath of
-      Just path -> appendFile path ("[" ++ show time ++ "] <" ++ user ++ "> " ++ message ++ "\n")
-      Nothing   -> return ()
-logMessage _ = return ()
+logMessage msg@(Privmsg chan user message) = do
+    time <- liftIO getZonedTime
+    case msg of
+      Privmsg chan user message -> logChannelMessage chan ("[" ++ show time ++ "] <" ++ user ++ "> " ++ message ++ "\n")
+      _                         -> return ()
+
+logChannelMessage :: Channel -> String -> IRC ()
+logChannelMessage channel message = do
+  filepath <- logFile chan
+  liftIO $ case filepath of
+    Just path -> appendFile path message
+    Nothing   -> return ()
