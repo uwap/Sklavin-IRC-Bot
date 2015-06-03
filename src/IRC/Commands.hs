@@ -59,7 +59,7 @@ configuratedCommand nick channel (comm:args) = do
   
     replaceArgs :: IRC String
     replaceArgs = do
-      setting <- return . fromMaybe False =<< lookupGlobalConfig ("Commands." ++ comm ++ ".replaceEmptyArgsWithNick")
+      setting <- return . fromMaybe False =<< lookupGlobalConfig ("Commands." ++ (toLower <$> comm) ++ ".replaceEmptyArgsWithNick")
       case (setting, null args) of
         (True, True) -> return nick
         _            -> return (unwords args)
