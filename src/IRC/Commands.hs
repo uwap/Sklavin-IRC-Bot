@@ -18,13 +18,14 @@ import Data.String.Utils (replace)
 import Data.Time.Clock
 import Data.List (isSuffixOf)
 import Data.List.Split
+import Data.Char
 
 import Text.Read
 
 configuratedCommand :: User -> Channel -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
 configuratedCommand nick channel (comm:args) = do
-    commands <- fromMaybe [] <$> lookupGlobalConfig ("Commands." ++ comm ++ ".reply")
+    commands <- fromMaybe [] <$> lookupGlobalConfig ("Commands." ++ (toLower <$> comm) ++ ".reply")
     unless (null commands) $ do
       random <- liftIO randomIO
       let cmd = commands !! (random `mod` length commands)
