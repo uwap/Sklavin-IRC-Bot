@@ -27,8 +27,14 @@ logMessage :: Message -> IRC ()
 logMessage msg = do
     time <- liftIO getZonedTime
     case msg of
-      Privmsg chan user message -> logChannelMessage chan ("[" ++ show time ++ "] <" ++ user ++ "> " ++ message ++ "\n")
+      Privmsg chan user message -> log' chan time ("<" ++ user ++ "> " ++ message)
+      Join user chan            -> log' chan time ("* " ++ user ++ " joined " ++ chan)
+      Part user chan message    -> log' chan time ("* " ++ user ++ " quit the channel (" ++ message ++ ")")
+-- TODO: Log to all channels:
+--      Quit user message         -> log chan time ("* " ++ user ++ " quit the server (" ++ message ++ ")")
       _                         -> return ()
+  where
+    log' chan time str = logChannelMessage chan ("[" ++ show time ++ "] " ++ str ++ "\n")
 
 logChannelMessage :: Channel -> String -> IRC ()
 logChannelMessage channel message = do

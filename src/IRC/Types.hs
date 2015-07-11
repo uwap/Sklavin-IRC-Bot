@@ -30,4 +30,6 @@ data Message = Privmsg Channel User String
              | Ping String
              | Invite User Channel
              | Quit User String
+             | Part User Channel String
+             | Join User Channel
              | Raw RawMessage

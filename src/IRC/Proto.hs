@@ -67,6 +67,8 @@ fromRawMessage msg = do
     (RawMessage _ "PING" code)                 -> Ping (unwords code)
     (RawMessage _ "INVITE" (nick:channel))     -> Invite nick (unwords channel)
     (RawMessage _ "QUIT" message)              -> Quit user (unwords message)
+    (RawMessage _ "PART" (channel:message))    -> Part user channel (unwords message)
+    (RawMessage _ "JOIN" channel)              -> Join user (unwords channel)
     _                                          -> Raw msg
 
 {--------------------------------------------------------------}
