@@ -8,8 +8,9 @@ import IRC.Config
 
 import Data.Configurator
 import Data.Configurator.Types
-import Data.Text
+import Data.Text hiding (reverse, dropWhile)
 import Data.Maybe
+import Data.Char
 
 import System.IO (hSetBuffering, BufferMode(NoBuffering), hGetLine, hClose)
 
@@ -56,11 +57,13 @@ run = do
 
 listen :: IRC ()
 listen = forever $ do
-  h <- asks socket
-  s <- liftIO $ hGetLine h
-  liftIO $ putStrLn s
-  eventListeners <- asks listeners
-  sequence_ $ eventListeners <*> return (fromRawMessage $ parseCommand s)
+    h <- asks socket
+    s <- liftIO $ trim <$> hGetLine h
+    liftIO $ putStrLn s
+    eventListeners <- asks listeners
+    sequence_ $ eventListeners <*> return (fromRawMessage $ parseCommand s)
+  where
+    trim = reverse . dropWhile isSpace . reverse
 
 disconnect :: IRC ()
 disconnect = do
