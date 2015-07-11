@@ -6,16 +6,17 @@ import IRC.Config
 import System.Directory
 import System.FilePath
 
+import Control.Lens hiding ((<.>))
 import Control.Monad
 import Control.Monad.Reader
 
 import Data.Time.LocalTime
 import Data.Maybe
 
-logFile :: String -> IRC (Maybe FilePath)
+logFile :: Channel -> IRC (Maybe FilePath)
 logFile chan = do
     serverLogPath <- lookupServerConfig "logs"
-    let filePath = serverLogPath >>= \path -> return (path </> chan <.> "log")
+    let filePath = serverLogPath >>= \path -> return (path </> (chan ^. name) <.> "log")
     case filePath of
       Just path -> liftIO $ liftM (fromBool path) $ doesDirectoryExist (fromJust serverLogPath)
       Nothing -> return Nothing
@@ -27,9 +28,9 @@ logMessage :: Message -> IRC ()
 logMessage msg = do
     time <- liftIO getZonedTime
     case msg of
-      Privmsg chan user message -> log' chan time ("<" ++ user ++ "> " ++ message)
-      Join user chan            -> log' chan time ("* " ++ user ++ " joined " ++ chan)
-      Part user chan message    -> log' chan time ("* " ++ user ++ " quit the channel (" ++ message ++ ")")
+      Privmsg user message chan -> log' chan time ("<" ++ user ++ "> " ++ message)
+      Join user chan            -> log' chan time ("* " ++ user ++ " joined " ++ (chan ^. name))
+      Part user message chan    -> log' chan time ("* " ++ user ++ " quit the channel (" ++ message ++ ")")
 -- TODO: Log to all channels:
 --      Quit user message         -> log chan time ("* " ++ user ++ " quit the server (" ++ message ++ ")")
       _                         -> return ()

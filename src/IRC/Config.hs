@@ -25,11 +25,11 @@ loadConfig = do
   return conf
 
 lookupGlobalConfig :: Configured a => String -> IRC (Maybe a)
-lookupGlobalConfig name = do
+lookupGlobalConfig name' = do
   conf <- asks config
-  liftIO $ C.lookup conf (pack name)
+  liftIO $ C.lookup conf (pack name')
 
 lookupServerConfig :: Configured a => String -> IRC (Maybe a)
-lookupServerConfig name = do
+lookupServerConfig name' = do
   server <- asks serverName 
-  lookupGlobalConfig (server ++ "." ++ name)
+  lookupGlobalConfig (server ++ "." ++ name')

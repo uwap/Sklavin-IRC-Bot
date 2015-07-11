@@ -6,11 +6,13 @@ import IRC.Types
 import IRC.Proto
 import IRC.Config
 
+import qualified Data.Map as M
 import Data.Configurator
 import Data.Configurator.Types
 import Data.Text hiding (reverse, dropWhile)
 import Data.Maybe
 import Data.Char
+import Data.IORef
 
 import System.IO (hSetBuffering, BufferMode(NoBuffering), hGetLine, hClose)
 
@@ -46,7 +48,8 @@ connectTo server conf eventListeners = do
   port <- require conf $ pack (server ++ ".port") :: IO Int
   h <- N.connectTo addr (N.PortNumber $ fromIntegral port)
   hSetBuffering h NoBuffering
-  return $ Irc h eventListeners conf server
+  chanRef <- liftIO $ newIORef M.empty
+  return $ Irc h eventListeners conf server chanRef
 
 run :: IRC ()
 run = do
@@ -61,7 +64,8 @@ listen = forever $ do
     s <- liftIO $ trim <$> hGetLine h
     liftIO $ putStrLn s
     eventListeners <- asks listeners
-    sequence_ $ eventListeners <*> return (fromRawMessage $ parseCommand s)
+    msg <- fromRawMessage (parseCommand s)
+    sequence_ $ eventListeners <*> return msg
   where
     trim = reverse . dropWhile isSpace . reverse
 

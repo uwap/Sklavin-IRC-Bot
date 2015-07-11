@@ -16,5 +16,5 @@ main = start [eventListener, logMessage]
 eventListener :: Message -> IRC ()
 eventListener (Ping code)             = pong code
 eventListener (Invite _ chan)         = joinChannel chan
-eventListener (Privmsg chan user msg) = when ("!" `isPrefixOf` msg) $ configuratedCommand user chan (words $ drop 1 msg)
+eventListener (Privmsg user msg chan) = when ("!" `isPrefixOf` msg) $ configuratedCommand user chan (words $ drop 1 msg)
 eventListener _ = return ()

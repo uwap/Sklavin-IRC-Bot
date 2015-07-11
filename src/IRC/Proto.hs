@@ -1,7 +1,9 @@
 module IRC.Proto where
 
 import IRC.Types
+import IRC.Channel
 import Text.Printf (hPrintf)
+import Control.Lens
 import Control.Monad.Reader (asks, liftIO)
 
 {--------------------------------------------------------------}
@@ -57,19 +59,19 @@ parseParams s = filter (not . null) $ parseMiddles ++ [parseTrailing s]
 {--------------------------------------------------------------}
 {--------------------------- Message --------------------------}
 {--------------------------------------------------------------}
-fromRawMessage :: RawMessage -> Message
+fromRawMessage :: RawMessage -> IRC Message
 fromRawMessage msg = do
   let (user, _, _) = case prefix msg of {
       Just s  -> parseUserHost s;
       Nothing -> ("UNKNOWN", "UNKNOWN", "UNKNOWN") }
   case msg of
-    (RawMessage _ "PRIVMSG" (channel:message)) -> Privmsg channel user (unwords message)
-    (RawMessage _ "PING" code)                 -> Ping (unwords code)
-    (RawMessage _ "INVITE" (nick:channel))     -> Invite nick (unwords channel)
-    (RawMessage _ "QUIT" message)              -> Quit user (unwords message)
-    (RawMessage _ "PART" (channel:message))    -> Part user channel (unwords message)
-    (RawMessage _ "JOIN" channel)              -> Join user (unwords channel)
-    _                                          -> Raw msg
+    (RawMessage _ "PRIVMSG" (channel:message)) -> return . Privmsg user (unwords message) =<< fromName channel
+    (RawMessage _ "PING" code)                 -> return $ Ping (unwords code)
+    (RawMessage _ "INVITE" (nick:channel))     -> return . Invite nick =<< fromName (unwords channel)
+    (RawMessage _ "QUIT" message)              -> return $ Quit user (unwords message)
+    (RawMessage _ "PART" (channel:message))    -> return . Part user (unwords message) =<< fromName channel
+    (RawMessage _ "JOIN" channel)              -> return . Join user =<< fromName (unwords channel)
+    _                                          -> return $ Raw msg
 
 {--------------------------------------------------------------}
 {------------------------ User Commands -----------------------}
@@ -81,19 +83,19 @@ back :: IRC ()
 back = write "AWAY"
 
 invite :: User -> Channel -> IRC ()
-invite nick channel = write $ "INVITE " ++ unwords [nick, channel]
+invite nick channel = write $ "INVITE " ++ unwords [nick, channel ^. name]
 
 quit :: String -> IRC ()
 quit quitMessage = write $ "QUIT :" ++ quitMessage
 
 joinChannel :: Channel -> IRC ()
-joinChannel channel = write $ "JOIN " ++ channel
+joinChannel channel = write $ "JOIN " ++ (channel ^. name)
 
 pong :: String -> IRC ()
 pong code = write $ "PONG :" ++ code
 
 privmsg :: Channel -> String -> IRC ()
-privmsg channel msg = write $ "PRIVMSG " ++ channel ++ " :" ++ msg
+privmsg channel msg = write $ "PRIVMSG " ++ (channel ^. name) ++ " :" ++ msg
 
 act :: Channel -> String -> IRC ()
 act channel msg = privmsg channel ('\x0001' : "ACTION " ++ msg ++ "\x0001")
