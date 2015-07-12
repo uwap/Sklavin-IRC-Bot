@@ -6,11 +6,10 @@
 module IRC.Types where
 
 import System.IO (Handle)
-import Control.Monad.Reader
+import Control.Monad.State
 import Control.Lens.TH
 import Data.Configurator.Types
 import Data.Map
-import Data.IORef
 
 type User        = String
 type Name        = String
@@ -30,17 +29,20 @@ data Message = Privmsg User String Channel
              | Join User Channel
              | Raw RawMessage
 
-type IRC = ReaderT Irc IO
-data Irc = Irc { socket     :: Handle
-               , listeners  :: [Message -> IRC ()]
-               , config     :: Config
-               , serverName :: String
-               , channelRef :: IORef (Map ChannelName Channel)
-               }
-
-data Channel = Channel { channelName :: ChannelName
+data Channel = Channel { channelName  :: ChannelName
+                       , channelUsers :: Map User User
                        }
+
 makeFields ''Channel
+
+type IRC = StateT Irc IO
+data Irc = Irc { ircSocket     :: Handle
+               , ircListeners  :: [Message -> IRC ()]
+               , ircConfig     :: Config
+               , ircServerName :: String
+               , ircChannels   :: Map ChannelName Channel
+               }
+makeFields ''Irc
 
 data UserCommand = UserCommand { ucommand :: String
                                , middles  :: [String]

@@ -8,9 +8,7 @@ import IRC.Proto
 import System.Random (randomIO)
 
 import Control.Lens
-import Control.Monad
-import Control.Monad.Reader (liftIO)
-import Control.Monad.Trans.Reader
+import Control.Monad.State
 import Control.Concurrent.Timer (oneShotTimer)
 import Control.Concurrent.Suspend.Lifted
 
@@ -21,7 +19,7 @@ import Data.List (isSuffixOf)
 import Data.List.Split
 import Data.Char
 
-import Text.Read
+import Text.Read hiding (get)
 
 configuratedCommand :: User -> Channel -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
@@ -67,8 +65,9 @@ configuratedCommand nick channel (comm:args) = do
 
     delayReply :: Delay -> IRC () -> IRC ()
     delayReply delay reply = do
-      handle <- ask
-      _ <- liftIO $ flip oneShotTimer delay $ runReaderT reply handle
+      -- TODO: This is dangerous because state may change
+      handle <- get
+      _ <- liftIO $ flip oneShotTimer delay $ evalStateT reply handle
       return ()
 
     choose :: String -> IRC ()

@@ -4,25 +4,25 @@ import IRC.Types
 import IRC.Channel
 import Text.Printf (hPrintf)
 import Control.Lens
-import Control.Monad.Reader (asks, liftIO)
+import Control.Monad.State
 
 {--------------------------------------------------------------}
 {-------------------------- Connection ------------------------}
 {--------------------------------------------------------------}
 write :: String -> IRC ()
 write s = do
-    h <- asks socket
+    h <- use socket
     liftIO $ hPrintf h "%s\r\n" s
 
 {--------------------------------------------------------------}
 {--------------------------- Parsing --------------------------}
 {--------------------------------------------------------------}
 parseUserHost :: String -> (User, Name, Host) -- User, Name, Host
-parseUserHost s = (nick s, name s, host s)
+parseUserHost s = (nick s, name' s, host s)
   where
-    nick = takeWhile (/= '!')
-    name = takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
-    host = drop 1 . dropWhile (/= '@')
+    nick  = takeWhile (/= '!')
+    name' = takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
+    host  = drop 1 . dropWhile (/= '@')
 
 {--
  RFC2812 defines a message as

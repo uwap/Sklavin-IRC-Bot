@@ -7,7 +7,8 @@ import Data.Text (pack)
 import Data.Configurator as C
 import Data.Configurator.Types
 
-import Control.Monad.Reader
+import Control.Lens
+import Control.Monad.State
 
 import System.Directory
 import System.FilePath
@@ -26,10 +27,10 @@ loadConfig = do
 
 lookupGlobalConfig :: Configured a => String -> IRC (Maybe a)
 lookupGlobalConfig name' = do
-  conf <- asks config
+  conf <- use config
   liftIO $ C.lookup conf (pack name')
 
 lookupServerConfig :: Configured a => String -> IRC (Maybe a)
 lookupServerConfig name' = do
-  server <- asks serverName 
+  server <- use serverName 
   lookupGlobalConfig (server ++ "." ++ name')

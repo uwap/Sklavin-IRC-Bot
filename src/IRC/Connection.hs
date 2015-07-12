@@ -12,12 +12,11 @@ import Data.Configurator.Types
 import Data.Text hiding (reverse, dropWhile)
 import Data.Maybe
 import Data.Char
-import Data.IORef
 
 import System.IO (hSetBuffering, BufferMode(NoBuffering), hGetLine, hClose)
 
-import Control.Monad
-import Control.Monad.Reader (asks, liftIO, runReaderT)
+import Control.Lens
+import Control.Monad.State
 import Control.Concurrent
 
 start :: [Message -> IRC ()] -> IO ()
@@ -28,8 +27,8 @@ start eventListeners = do
 
 spawnThreads :: [String] -> Config -> [Message -> IRC ()] -> IO ()
 spawnThreads servers conf eventListeners = do
-    children <- forM servers spawnThread
-    forM_ children takeMVar
+    children' <- forM servers spawnThread
+    forM_ children' takeMVar
   where
     spawnThread server = do
       m <- newEmptyMVar
@@ -40,7 +39,7 @@ spawnThreads servers conf eventListeners = do
       Right _ -> putMVar m ()
     runThread server = do
       irc <- connectTo server conf eventListeners
-      runReaderT run irc
+      evalStateT run irc
 
 connectTo :: String -> Config -> [Message -> IRC ()] -> IO Irc
 connectTo server conf eventListeners = do
@@ -48,8 +47,7 @@ connectTo server conf eventListeners = do
   port <- require conf $ pack (server ++ ".port") :: IO Int
   h <- N.connectTo addr (N.PortNumber $ fromIntegral port)
   hSetBuffering h NoBuffering
-  chanRef <- liftIO $ newIORef M.empty
-  return $ Irc h eventListeners conf server chanRef
+  return $ Irc h eventListeners conf server M.empty
 
 run :: IRC ()
 run = do
@@ -60,10 +58,10 @@ run = do
 
 listen :: IRC ()
 listen = forever $ do
-    h <- asks socket
+    h <- use socket
     s <- liftIO $ trim <$> hGetLine h
     liftIO $ putStrLn s
-    eventListeners <- asks listeners
+    eventListeners <- use listeners
     msg <- fromRawMessage (parseCommand s)
     sequence_ $ eventListeners <*> return msg
   where
@@ -71,5 +69,5 @@ listen = forever $ do
 
 disconnect :: IRC ()
 disconnect = do
-  h <- asks socket
+  h <- use socket
   liftIO $ hClose h
