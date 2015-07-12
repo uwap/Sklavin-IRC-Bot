@@ -6,7 +6,6 @@ import Twitter.Tweet
 
 import Control.Monad
 
-import qualified Data.Text as T
 import Data.List
 import Data.Char
 
@@ -22,5 +21,5 @@ eventListener (Privmsg _ message chan) = do
                   tweet <- readTweet status_id
                   case tweet of
                     Left err -> privmsg chan err
-                    Right t  -> privmsg chan (T.unpack $ text t)
+                    Right t  -> privmsg chan (show t)
 eventListener _ = return () 
