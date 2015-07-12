@@ -6,12 +6,14 @@ import IRC.Commands
 import IRC.Proto
 import IRC.Logging
 
+import qualified Twitter.EventListener as T
+
 import Control.Monad
 
 import Data.List
 
 main :: IO ()
-main = start [eventListener, logMessage]
+main = start [eventListener, logMessage, T.eventListener]
 
 eventListener :: Message -> IRC ()
 eventListener (Ping code)             = pong code
