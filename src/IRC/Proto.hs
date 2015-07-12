@@ -95,7 +95,11 @@ pong :: String -> IRC ()
 pong code = write $ "PONG :" ++ code
 
 privmsg :: Channel -> String -> IRC ()
-privmsg channel msg = write $ "PRIVMSG " ++ (channel ^. name) ++ " :" ++ msg
+privmsg channel msg = forM_ (lines msg) privmsgLine
+  where
+    privmsgLine m = unless (null m) $ write $ "PRIVMSG " ++ (channel ^. name) ++ " :" ++ m
 
 act :: Channel -> String -> IRC ()
-act channel msg = privmsg channel ('\x0001' : "ACTION " ++ msg ++ "\x0001")
+act channel msg = forM_ (lines msg) actLine
+  where
+    actLine m = unless (null m) $ privmsg channel ('\x0001' : "ACTION " ++ m ++ "\x0001")
