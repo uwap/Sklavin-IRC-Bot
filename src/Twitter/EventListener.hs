@@ -5,12 +5,14 @@ import IRC.Proto
 import Twitter.Tweet
 
 import Control.Monad
+import Control.Monad.Catch (handle, SomeException)
 
 import Data.List
 import Data.Char
 
 eventListener :: Message -> IRC ()
-eventListener (Privmsg _ message chan) = do
+eventListener (Privmsg _ message chan) =
+        handle handleError $ do
           let ws = words message
           forM_ ws $ \w ->
             when ("http://twitter.com/" `isPrefixOf` w || "https://twitter.com/" `isPrefixOf` w) $ do
@@ -22,4 +24,7 @@ eventListener (Privmsg _ message chan) = do
                   case tweet of
                     Left err -> privmsg chan err
                     Right t  -> privmsg chan (show t)
+  where
+    handleError :: SomeException -> IRC ()
+    handleError exc = privmsg chan (show exc)
 eventListener _ = return () 
