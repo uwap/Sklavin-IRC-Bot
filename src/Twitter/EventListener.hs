@@ -26,5 +26,7 @@ eventListener (Privmsg _ message chan) =
                     Right t  -> privmsg chan (show t)
   where
     handleError :: SomeException -> IRC ()
-    handleError exc = privmsg chan (show exc)
+    handleError exc = do
+      print exc
+      pivmsg chan "An error occured. Maybe the account is private?"
 eventListener _ = return () 
