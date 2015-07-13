@@ -21,12 +21,13 @@ data RawMessage = RawMessage { prefix  :: Maybe String
                              , params  :: [String]
                              }
                              
-data Message = Privmsg User String Channel
-             | Ping String
-             | Invite User Channel
-             | Quit User String
-             | Part User String Channel
-             | Join User Channel
+data Message = Privmsg User String Channel -- Someone wrote something on some channel
+             | Ping String                 -- Received a Ping
+             | Invite User Channel         -- The bot was invited by some user to some channel
+             | Quit User String            -- Some user quit the server with some message
+             | Part User String Channel    -- Some user quit some channel with some message
+             | Join User Channel           -- Some user joined some channel
+             | Send String Channel         -- The bot wrote some message in some channel
              | Raw RawMessage
 
 data Channel = Channel { channelName  :: ChannelName
@@ -40,7 +41,9 @@ data Irc = Irc { ircSocket     :: Handle
                , ircListeners  :: [Message -> IRC ()]
                , ircConfig     :: Config
                , ircServerName :: String
+               , ircNick       :: String
                , ircChannels   :: Map ChannelName Channel
+               , ircEventQueue :: [Message]               -- Events that are triggered outside of listen
                }
 makeFields ''Irc
 

@@ -23,7 +23,7 @@ import Text.Read hiding (get)
 
 configuratedCommand :: User -> Channel -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()
-configuratedCommand nick channel (comm:args) = do
+configuratedCommand nick' channel (comm:args) = do
     commands <- fromMaybe [] <$> lookupGlobalConfig ("Commands." ++ (toLower <$> comm) ++ ".reply")
     unless (null commands) $ do
       random <- liftIO randomIO
@@ -54,13 +54,13 @@ configuratedCommand nick channel (comm:args) = do
       let replaceAll = foldl (flip (uncurry replace))
       argsr <- replaceArgs
       time <- liftIO getCurrentTime 
-      return $ replaceAll line [("@nick@",nick), ("@channel@",channel ^. name), ("@time@",show time), ("@args@",argsr)]
+      return $ replaceAll line [("@nick@",nick'), ("@channel@",channel ^. name), ("@time@",show time), ("@args@",argsr)]
   
     replaceArgs :: IRC String
     replaceArgs = do
       setting' <- return . fromMaybe False =<< lookupGlobalConfig ("Commands." ++ (toLower <$> comm) ++ ".replaceEmptyArgsWithNick")
       case (setting', null args) of
-        (True, True) -> return nick
+        (True, True) -> return nick'
         _            -> return (unwords args)
 
     delayReply :: Delay -> IRC () -> IRC ()

@@ -27,12 +27,14 @@ logFile chan = do
 logMessage :: Message -> IRC ()
 logMessage msg = do
     time <- liftIO getZonedTime
+    botNick <- use nick
     case msg of
       Privmsg user message chan -> log' chan time ("<" ++ user ++ "> " ++ message)
       Join user chan            -> log' chan time ("* " ++ user ++ " joined " ++ (chan ^. name))
       Part user message chan    -> log' chan time ("* " ++ user ++ " quit the channel (" ++ message ++ ")")
 -- TODO: Log to all channels:
 --      Quit user message         -> log chan time ("* " ++ user ++ " quit the server (" ++ message ++ ")")
+      Send message chan         -> log' chan time ("<" ++ botNick ++ "> " ++ message)
       _                         -> return ()
   where
     log' chan time str = logChannelMessage chan ("[" ++ show time ++ "] " ++ str ++ "\n")

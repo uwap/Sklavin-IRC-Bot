@@ -6,6 +6,7 @@ import Twitter.Tweet
 
 import Control.Monad
 import Control.Monad.Catch (handle, SomeException)
+import Control.Monad.State (liftIO)
 
 import Data.List
 import Data.Char
@@ -27,6 +28,6 @@ eventListener (Privmsg _ message chan) =
   where
     handleError :: SomeException -> IRC ()
     handleError exc = do
-      print exc
-      pivmsg chan "An error occured. Maybe the account is private?"
+      liftIO $ print exc
+      privmsg chan "An error occured. Maybe the account is private?"
 eventListener _ = return () 

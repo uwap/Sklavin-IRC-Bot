@@ -18,9 +18,9 @@ write s = do
 {--------------------------- Parsing --------------------------}
 {--------------------------------------------------------------}
 parseUserHost :: String -> (User, Name, Host) -- User, Name, Host
-parseUserHost s = (nick s, name' s, host s)
+parseUserHost s = (nick' s, name' s, host s)
   where
-    nick  = takeWhile (/= '!')
+    nick' = takeWhile (/= '!')
     name' = takeWhile (/= '@') . drop 1 . dropWhile (/= '!')
     host  = drop 1 . dropWhile (/= '@')
 
@@ -67,7 +67,7 @@ fromRawMessage msg = do
   case msg of
     (RawMessage _ "PRIVMSG" (channel:message)) -> return . Privmsg user (unwords message) =<< fromName channel
     (RawMessage _ "PING" code)                 -> return $ Ping (unwords code)
-    (RawMessage _ "INVITE" (nick:channel))     -> return . Invite nick =<< fromName (unwords channel)
+    (RawMessage _ "INVITE" (nick':channel))    -> return . Invite nick' =<< fromName (unwords channel)
     (RawMessage _ "QUIT" message)              -> return $ Quit user (unwords message)
     (RawMessage _ "PART" (channel:message))    -> return . Part user (unwords message) =<< fromName channel
     (RawMessage _ "JOIN" channel)              -> return . Join user =<< fromName (unwords channel)
@@ -83,7 +83,7 @@ back :: IRC ()
 back = write "AWAY"
 
 invite :: User -> Channel -> IRC ()
-invite nick channel = write $ "INVITE " ++ unwords [nick, channel ^. name]
+invite nick' channel = write $ "INVITE " ++ unwords [nick', channel ^. name]
 
 quit :: String -> IRC ()
 quit quitMessage = write $ "QUIT :" ++ quitMessage
@@ -97,7 +97,9 @@ pong code = write $ "PONG :" ++ code
 privmsg :: Channel -> String -> IRC ()
 privmsg channel msg = forM_ (lines msg) privmsgLine
   where
-    privmsgLine m = unless (null m) $ write $ "PRIVMSG " ++ (channel ^. name) ++ " :" ++ m
+    privmsgLine m = unless (null m) $ do
+      write $ "PRIVMSG " ++ (channel ^. name) ++ " :" ++ m
+      eventQueue %= (++ [Send m channel])
 
 act :: Channel -> String -> IRC ()
 act channel msg = forM_ (lines msg) actLine

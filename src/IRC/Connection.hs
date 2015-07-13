@@ -9,7 +9,7 @@ import IRC.Config
 import qualified Data.Map as M
 import Data.Configurator
 import Data.Configurator.Types
-import Data.Text hiding (reverse, dropWhile)
+import Data.Text hiding (reverse, dropWhile, null)
 import Data.Maybe
 import Data.Char
 
@@ -43,28 +43,36 @@ spawnThreads servers conf eventListeners = do
 
 connectTo :: String -> Config -> [Message -> IRC ()] -> IO Irc
 connectTo server conf eventListeners = do
-  addr <- require conf $ pack (server ++ ".server") :: IO String
-  port <- require conf $ pack (server ++ ".port") :: IO Int
-  h <- N.connectTo addr (N.PortNumber $ fromIntegral port)
+  addr  <- require conf $ pack (server ++ ".server") :: IO String
+  port  <- require conf $ pack (server ++ ".port") :: IO Int
+  nick' <- require conf $ pack (server ++ ".nick") :: IO String
+  h     <- N.connectTo addr (N.PortNumber $ fromIntegral port)
   hSetBuffering h NoBuffering
-  return $ Irc h eventListeners conf server M.empty
+  return $ Irc h eventListeners conf server nick' M.empty []
 
 run :: IRC ()
 run = do
-  nick <- fromJust <$> lookupServerConfig "nick"
-  write $ "NICK " ++ nick
-  write $ "USER " ++ nick ++ " 0 * :" ++ nick
+  nick' <- fromJust <$> lookupServerConfig "nick"
+  write $ "NICK " ++ nick'
+  write $ "USER " ++ nick' ++ " 0 * :" ++ nick'
   listen
 
 listen :: IRC ()
 listen = forever $ do
     h <- use socket
+    -- Handle queue first
+    queue' <- use eventQueue
+    unless (null queue') $ do
+      eventQueue .= []
+      handleEvents queue'
+    -- Handle input
     s <- liftIO $ trim <$> hGetLine h
-    liftIO $ putStrLn s
-    eventListeners <- use listeners
     msg <- fromRawMessage (parseCommand s)
-    sequence_ $ eventListeners <*> return msg
+    handleEvents (return msg)
   where
+    handleEvents queue' = do
+      eventListeners <- use listeners
+      sequence_ $ eventListeners <*> queue'
     trim = reverse . dropWhile isSpace . reverse
 
 disconnect :: IRC ()
