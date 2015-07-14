@@ -46,9 +46,3 @@ data Irc = Irc { ircSocket     :: Handle
                , ircEventQueue :: [Message]               -- Events that are triggered outside of listen
                }
 makeFields ''Irc
-
-data UserCommand = UserCommand { ucommand :: String
-                               , middles  :: [String]
-                               , trailing :: Maybe String
-                               }
-
