@@ -12,6 +12,7 @@ import Control.Monad.Reader
 
 import Data.Time.LocalTime
 import Data.Maybe
+import Data.Map (elems)
 
 logFile :: Channel -> IRC (Maybe FilePath)
 logFile chan = do
@@ -28,12 +29,12 @@ logMessage :: Message -> IRC ()
 logMessage msg = do
     time <- liftIO getZonedTime
     botNick <- use nick
+    chans <- uses channels elems
     case msg of
       Privmsg user message chan -> log' chan time ("<" ++ user ++ "> " ++ message)
       Join user chan            -> log' chan time ("* " ++ user ++ " joined " ++ (chan ^. name))
       Part user message chan    -> log' chan time ("* " ++ user ++ " quit the channel (" ++ message ++ ")")
--- TODO: Log to all channels:
---      Quit user message         -> log chan time ("* " ++ user ++ " quit the server (" ++ message ++ ")")
+      Quit user message         -> forM_ chans $ \chan -> log' chan time ("* " ++ user ++ " quit the server (" ++ message ++ ")")
       Send message chan         -> log' chan time ("<" ++ botNick ++ "> " ++ message)
       _                         -> return ()
   where
