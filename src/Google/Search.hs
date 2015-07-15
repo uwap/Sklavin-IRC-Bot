@@ -6,6 +6,7 @@ import GHC.Generics
 import Data.Text (Text, unpack)
 import Data.Aeson
 import Network.HTTP.Conduit
+import Control.Concurrent
 import Control.Monad.IO.Class
 
 data SearchResult = SearchResult { title :: !Text
@@ -26,8 +27,11 @@ instance ToJSON SearchRequest
 
 google :: MonadIO m => String -> m String
 google q = liftIO $ do
-  let url' = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" ++ q
-  resp <- simpleHttp url'
-  case eitherDecode resp of
-    Left err -> return (show err)
-    Right r  -> return (show $ head $ results r)
+  result <- newEmptyMVar
+  _ <- forkIO $ do
+    let url' = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" ++ q
+    resp <- simpleHttp url'
+    putMVar result $ case eitherDecode resp of
+      Left err -> show err
+      Right r  -> show $ head $ results r
+  readMVar result

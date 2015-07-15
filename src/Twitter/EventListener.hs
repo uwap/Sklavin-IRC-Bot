@@ -4,15 +4,17 @@ import IRC.Types
 import IRC.Proto
 import Twitter.Tweet
 
+import Control.Concurrent
 import Control.Monad
 import Control.Monad.Catch (handle, SomeException)
 import Control.Monad.State (liftIO)
+import Control.Monad.Trans.Control (liftBaseDiscard)
 
 import Data.List
 import Data.Char
 
 eventListener :: Message -> IRC ()
-eventListener (Privmsg _ message chan) =
+eventListener (Privmsg _ message chan) = void $ liftBaseDiscard forkIO $
         handle handleError $ do
           let ws = words message
           forM_ ws $ \w ->
