@@ -5,6 +5,8 @@ import IRC.Types
 import IRC.Config
 import IRC.Proto
 
+import Google.Search
+
 import System.Random (randomIO)
 
 import Control.Lens
@@ -38,6 +40,7 @@ configuratedCommand nick' channel (comm:args) = do
         Just "/me"     -> act channel (drop 4 line)
         Just "/delay"  -> executeDelay $ drop 7 rawline
         Just "/choose" -> choose $ drop 8 line
+        Just "/google" -> privmsg channel =<< google (drop 8 line)
         Just _         -> privmsg channel line
 
     executeDelay :: String -> IRC ()
