@@ -11,7 +11,7 @@ import System.Random (randomIO)
 
 import Control.Lens
 import Control.Monad.State
-import Control.Concurrent.Timer (oneShotTimer)
+import Control.Concurrent.Timer.Lifted (oneShotTimer)
 import Control.Concurrent.Suspend.Lifted
 
 import Data.Maybe (fromMaybe, listToMaybe)
@@ -67,11 +67,7 @@ configuratedCommand nick' channel (comm:args) = do
         _            -> return (unwords args)
 
     delayReply :: Delay -> IRC () -> IRC ()
-    delayReply delay reply = do
-      -- TODO: This is dangerous because state may change
-      handle <- get
-      _ <- liftIO $ flip oneShotTimer delay $ evalStateT reply handle
-      return ()
+    delayReply delay = void . flip oneShotTimer delay
 
     choose :: String -> IRC ()
     choose str = do
