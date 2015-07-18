@@ -67,6 +67,7 @@ listen = forever $ do
       handleEvents queue'
     -- Handle input
     s <- liftIO $ trim <$> hGetLine h
+    liftIO $ print s
     msg <- fromRawMessage (parseCommand s)
     handleEvents (return msg)
   where

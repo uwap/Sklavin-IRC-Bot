@@ -28,6 +28,7 @@ data Message = Privmsg User String Channel -- Someone wrote something on some ch
              | Part User String Channel    -- Some user quit some channel with some message
              | Join User Channel           -- Some user joined some channel
              | Send String Channel         -- The bot wrote some message in some channel
+             | NamesList [User] Channel    -- The /NAMES list of users in a channel was received
              | Raw RawMessage
 
 data Channel = Channel { channelName  :: ChannelName

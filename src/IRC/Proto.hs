@@ -71,6 +71,7 @@ fromRawMessage msg = do
     (RawMessage _ "QUIT" message)              -> return $ Quit user (unwords message)
     (RawMessage _ "PART" (channel:message))    -> return . Part user (unwords message) =<< fromName channel
     (RawMessage _ "JOIN" channel)              -> return . Join user =<< fromName (unwords channel)
+    (RawMessage _ "353" (_:channel:users'))    -> return . NamesList users' =<< fromName channel
     _                                          -> return $ Raw msg
 
 {--------------------------------------------------------------}
