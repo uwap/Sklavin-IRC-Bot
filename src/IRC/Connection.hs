@@ -7,11 +7,11 @@ import IRC.Proto
 import IRC.Config
 
 import qualified Data.Map as M
+import qualified Data.String.Utils as U
 import Data.Configurator
 import Data.Configurator.Types
 import Data.Text hiding (reverse, dropWhile, null)
 import Data.Maybe
-import Data.Char
 
 import System.IO (hSetBuffering, BufferMode(NoBuffering), hGetLine, hClose)
 
@@ -66,7 +66,7 @@ listen = forever $ do
       eventQueue .= []
       handleEvents queue'
     -- Handle input
-    s <- liftIO $ trim <$> hGetLine h
+    s <- liftIO $ U.strip <$> hGetLine h
     liftIO $ print s
     msg <- fromRawMessage (parseCommand s)
     handleEvents (return msg)
@@ -74,7 +74,6 @@ listen = forever $ do
     handleEvents queue' = do
       eventListeners <- use listeners
       sequence_ $ eventListeners <*> queue'
-    trim = reverse . dropWhile isSpace . reverse
 
 disconnect :: IRC ()
 disconnect = do
