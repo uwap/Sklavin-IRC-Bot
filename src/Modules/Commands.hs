@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-module IRC.Commands where
+module Modules.Commands (eventListener) where
 
-import IRC.Types
-import IRC.Config
-import IRC.Proto
+import Core.IRC.Types
+import Core.IRC.Config
+import Core.IRC.Proto
 
-import Google.Search
+import Modules.Google.Search
 
 import System.Random (randomIO)
 
@@ -22,6 +22,11 @@ import Data.List.Split
 import Data.Char
 
 import Text.Read hiding (get)
+
+eventListener :: Message -> IRC ()
+eventListener (Privmsg user ('!':msg) chan) =
+  configuratedCommand user chan (words msg)
+eventListener _ = return ()
 
 configuratedCommand :: User -> Channel -> [String] -> IRC ()
 configuratedCommand _ _ [] = return ()

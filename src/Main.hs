@@ -1,22 +1,17 @@
 module Main where
 
-import IRC.Types
-import IRC.Connection
-import IRC.Commands
-import IRC.Proto
-import IRC.Logging
+import Core.IRC.Types
+import Core.IRC.Connection
+import Core.IRC.Proto
 
-import qualified Twitter.EventListener as T
-
-import Control.Monad
-
-import Data.List
+import qualified Modules.Twitter.EventListener as T
+import qualified Modules.Commands as C
+import qualified Modules.Logging as L
 
 main :: IO ()
-main = start [eventListener, logMessage, T.eventListener]
+main = start [eventListener, L.logMessage, T.eventListener, C.eventListener]
 
 eventListener :: Message -> IRC ()
 eventListener (Ping code)             = pong code
 eventListener (Invite _ chan)         = joinChannel chan
-eventListener (Privmsg user msg chan) = when ("!" `isPrefixOf` msg) $ configuratedCommand user chan (words $ drop 1 msg)
 eventListener _ = return ()

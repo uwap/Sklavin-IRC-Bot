@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module IRC.Config where
+module Core.IRC.Config where
 
-import IRC.Types
+import Core.IRC.Types
 
 import Data.Text (pack)
 import Data.Configurator as C

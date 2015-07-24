@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Google.Search (google) where
+module Modules.Google.Search (google) where
 
 import GHC.Generics
 import Data.Text (Text, unpack)

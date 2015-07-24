@@ -1,7 +1,7 @@
-module IRC.Logging where
+module Modules.Logging where
 
-import IRC.Types
-import IRC.Config
+import Core.IRC.Types
+import Core.IRC.Config
 
 import System.Directory
 import System.FilePath

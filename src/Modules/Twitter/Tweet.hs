@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
-module Twitter.Tweet where
+module Modules.Twitter.Tweet where
 
-import IRC.Types hiding (name)
-import Twitter.Auth
+import Core.IRC.Types hiding (name)
+import Modules.Twitter.Auth
 import GHC.Generics
 import Data.Text
 import Data.Aeson

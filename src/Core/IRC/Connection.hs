@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
-module IRC.Connection where
+module Core.IRC.Connection where
 
 import qualified Network as N
-import IRC.Types
-import IRC.Proto
-import IRC.Config
+import Core.IRC.Types
+import Core.IRC.Proto
+import Core.IRC.Config
 
 import qualified Data.Map as M
 import qualified Data.String.Utils as U

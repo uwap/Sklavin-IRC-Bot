@@ -1,7 +1,7 @@
-module IRC.Proto where
+module Core.IRC.Proto where
 
-import IRC.Types
-import IRC.Channel
+import Core.IRC.Types
+import Core.IRC.Channel
 import Text.Printf (hPrintf)
 import Control.Lens
 import Control.Monad.State

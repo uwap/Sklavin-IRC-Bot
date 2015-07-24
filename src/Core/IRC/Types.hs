@@ -3,7 +3,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
-module IRC.Types where
+module Core.IRC.Types where
 
 import System.IO (Handle)
 import Control.Monad.State
@@ -47,3 +47,5 @@ data Irc = Irc { ircSocket     :: Handle
                , ircEventQueue :: [Message]               -- Events that are triggered outside of listen
                }
 makeFields ''Irc
+
+type EventListener = Message -> IRC ()

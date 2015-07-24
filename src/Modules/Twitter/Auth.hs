@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Twitter.Auth (authRequest) where
+module Modules.Twitter.Auth (authRequest) where
 
-import IRC.Types
-import IRC.Config
+import Core.IRC.Types
+import Core.IRC.Config
 import Control.Monad.State
 import Web.Authenticate.OAuth
 import Network.HTTP.Conduit

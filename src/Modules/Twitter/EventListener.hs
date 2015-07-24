@@ -1,8 +1,8 @@
-module Twitter.EventListener where
+module Modules.Twitter.EventListener where
 
-import IRC.Types
-import IRC.Proto
-import Twitter.Tweet
+import Core.IRC.Types
+import Core.IRC.Proto
+import Modules.Twitter.Tweet
 
 import Control.Concurrent
 import Control.Monad

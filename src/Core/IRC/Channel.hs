@@ -1,9 +1,9 @@
-module IRC.Channel (
+module Core.IRC.Channel (
   fromName,
   updateChannels
 ) where
 
-import IRC.Types
+import Core.IRC.Types
 import Control.Lens
 import qualified Data.Map as M
 
