@@ -16,6 +16,7 @@ import Control.Monad.Trans.Control (liftBaseDiscard)
 
 import Data.List
 import Data.Char
+import Data.List.Utils as U
 import Data.ByteString.Char8 (pack)
 
 eventListener :: Message -> IRC ()
@@ -44,9 +45,11 @@ quoteEventListener (Privmsg user' message chan) =
     -- Hardcoded Username? Ewww. Change!
     when ("!tweet " `isPrefixOf` message && user' == "uwap") $ do
       let tweet = drop 1 $ dropWhile (/= ' ') message
-      let requestBody' = urlEncodedBody [("status", pack tweet)]
+      let requestBody' = urlEncodedBody [("status", lineUp tweet)]
       result <- authRequest "https://api.twitter.com/1.1/statuses/update.json" requestBody'
       case result of
         Left err -> privmsg chan err
         Right _  -> privmsg chan "Tweeted!"
+  where
+    lineUp = pack . U.join "\n<" . split "<"
 quoteEventListener _ = return ()
