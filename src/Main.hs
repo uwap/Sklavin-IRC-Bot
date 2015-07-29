@@ -9,7 +9,7 @@ import qualified Modules.Commands as C
 import qualified Modules.Logging as L
 
 main :: IO ()
-main = start [eventListener, L.logMessage, T.eventListener, C.eventListener]
+main = start [eventListener, L.logMessage, T.eventListener, T.quoteEventListener, C.eventListener]
 
 eventListener :: Message -> IRC ()
 eventListener (Ping code)             = pong code

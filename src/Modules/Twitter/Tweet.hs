@@ -33,7 +33,7 @@ replaceUrls (u:us) t = replaceUrls us (replace (url u) (expanded_url u) t)
 
 readTweet :: String -> IRC (Either String Tweet)
 readTweet id' = do
-  req <- authRequest ("https://api.twitter.com/1.1/statuses/show.json?id=" ++ id')
+  req <- authRequest ("https://api.twitter.com/1.1/statuses/show.json?id=" ++ id') id
   return $ case req of
     Left err -> Left err
     Right r -> eitherDecode r

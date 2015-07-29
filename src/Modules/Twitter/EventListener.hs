@@ -1,8 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Modules.Twitter.EventListener where
 
 import Core.IRC.Types
 import Core.IRC.Proto
+import Modules.Twitter.Auth
 import Modules.Twitter.Tweet
+
+import Network.HTTP.Conduit
 
 import Control.Concurrent
 import Control.Monad
@@ -12,6 +16,7 @@ import Control.Monad.Trans.Control (liftBaseDiscard)
 
 import Data.List
 import Data.Char
+import Data.ByteString.Char8 (pack)
 
 eventListener :: Message -> IRC ()
 eventListener (Privmsg _ message chan) = void $ liftBaseDiscard forkIO $
@@ -32,4 +37,16 @@ eventListener (Privmsg _ message chan) = void $ liftBaseDiscard forkIO $
     handleError exc = do
       liftIO $ print exc
       privmsg chan "An error occured. Maybe the account is private?"
-eventListener _ = return () 
+eventListener _ = return ()
+
+quoteEventListener :: Message -> IRC ()
+quoteEventListener (Privmsg user' message chan) =
+    -- Hardcoded Username? Ewww. Change!
+    when ("!tweet " `isPrefixOf` message && user' == "uwap") $ do
+      let tweet = drop 1 $ dropWhile (/= ' ') message
+      let requestBody' = urlEncodedBody [("status", pack tweet)]
+      result <- authRequest "https://api.twitter.com/1.1/statuses/update.json" requestBody'
+      case result of
+        Left err -> privmsg chan err
+        Right _  -> privmsg chan "Tweeted!"
+quoteEventListener _ = return ()

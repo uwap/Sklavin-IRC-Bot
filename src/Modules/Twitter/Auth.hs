@@ -33,13 +33,13 @@ twitterCredential = do
       liftIO $ putStrLn "[ERROR] Wasn't able to load twitter.accessToken or twitter.accessSecret from the config"
       return Nothing
 
-authRequest :: String -> IRC (Either String ByteString)
-authRequest url = do
+authRequest :: String -> (Request -> Request) -> IRC (Either String ByteString)
+authRequest url f = do
   cred'  <- twitterCredential
   oauth' <- twitterOAuth
   case (cred', oauth') of
     (Just cred, Just oauth) -> do
-      req   <- parseUrl url
+      req   <- f <$> parseUrl url
       res   <- withManager $ \m -> do
         signed <- signOAuth oauth cred req
         httpLbs signed m
