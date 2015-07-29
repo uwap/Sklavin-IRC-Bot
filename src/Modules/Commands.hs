@@ -45,7 +45,7 @@ configuratedCommand nick' channel (comm:args) = do
         Just "/me"     -> act channel (drop 4 line)
         Just "/delay"  -> executeDelay $ drop 7 rawline
         Just "/choose" -> choose $ drop 8 line
-        Just "/google" -> privmsg channel =<< google (drop 8 line)
+        Just "/google" -> google (drop 8 line) $ privmsg channel
         Just _         -> privmsg channel line
 
     executeDelay :: String -> IRC ()
