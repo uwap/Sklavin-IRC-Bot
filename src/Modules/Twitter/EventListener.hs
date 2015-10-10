@@ -20,7 +20,11 @@ import Data.List.Utils as U
 import Data.ByteString.Char8 (pack)
 
 eventListener :: Message -> IRC ()
-eventListener (Privmsg _ message chan) = void $ liftBaseDiscard forkIO $
+eventListener (Privmsg _ message chan) = eventHandler message chan
+eventListener _ = return ()
+
+eventHandler :: String  -> Channel -> IRC ()
+eventHandler message chan = void $ liftBaseDiscard forkIO $
         handle handleError $ do
           let ws = words message
           forM_ ws $ \w ->
@@ -32,13 +36,16 @@ eventListener (Privmsg _ message chan) = void $ liftBaseDiscard forkIO $
                   tweet <- readTweet status_id
                   case tweet of
                     Left err -> privmsg chan err
-                    Right t  -> privmsg chan (show t)
+                    Right t  -> do
+                        privmsg chan (show t)
+                        eventHandler (show t) chan
   where
     handleError :: SomeException -> IRC ()
     handleError exc = do
       liftIO $ print exc
       privmsg chan "An error occured. Maybe the account is private?"
-eventListener _ = return ()
+
+
 
 quoteEventListener :: Message -> IRC ()
 quoteEventListener (Privmsg user' message chan) =
