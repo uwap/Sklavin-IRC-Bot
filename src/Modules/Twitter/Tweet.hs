@@ -6,6 +6,7 @@ import Modules.Twitter.Auth
 import GHC.Generics
 import Data.Text
 import Data.Aeson
+import qualified Data.String.Utils
 
 data TwitterUrl = TwitterUrl { url :: !Text, expanded_url :: !Text } deriving (Generic)
 instance FromJSON TwitterUrl
@@ -25,11 +26,14 @@ data Tweet = Tweet { text :: !Text, user :: !TwitterUser, entities :: !TwitterEn
 instance FromJSON Tweet
 instance ToJSON Tweet
 instance Show Tweet where
-  show tweet = show (user tweet) ++ ": " ++ unpack (replaceUrls (urls (entities tweet)) (text tweet))
+  show tweet = show (user tweet) ++ ": " ++ replaceLinebreaks(unpack (replaceUrls (urls (entities tweet)) (text tweet)))
 
 replaceUrls :: [TwitterUrl] -> Text -> Text
 replaceUrls [] t = t
 replaceUrls (u:us) t = replaceUrls us (replace (url u) (expanded_url u) t)
+
+replaceLinebreaks :: String -> String
+replaceLinebreaks t = Data.String.Utils.replace "\n" " " t
 
 readTweet :: String -> IRC (Either String Tweet)
 readTweet id' = do
