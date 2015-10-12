@@ -1,13 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Modules.Twitter.EventListener where
+module Modules.Twitter.EventListener 
+  ( eventListener
+  , quoteEventListener
+  ) where
 
 import Core.IRC.Types
 import Core.IRC.Proto
 import Modules.Twitter.Auth
-import Modules.Twitter.Tweet
+import Modules.Twitter.Tweet hiding (name)
 
 import Network.HTTP.Conduit
 
+import Control.Lens
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.Catch (handle, SomeException)
@@ -19,9 +23,14 @@ import Data.Char
 import Data.List.Utils as U
 import Data.ByteString.Char8 (pack)
 
+handleError :: Channel -> SomeException -> IRC ()
+handleError chan exc = do
+  liftIO $ print exc
+  privmsg chan "An error occured. Maybe you tried reading on a private account or writing something invalid?"
+
 eventListener :: Message -> IRC ()
 eventListener (Privmsg _ message chan) = void $ liftBaseDiscard forkIO $
-        handle handleError $ do
+        handle (handleError chan) $ do
           let ws = words message
           forM_ ws $ \w ->
             when ("http://twitter.com/" `isPrefixOf` w || "https://twitter.com/" `isPrefixOf` w) $ do
@@ -33,18 +42,13 @@ eventListener (Privmsg _ message chan) = void $ liftBaseDiscard forkIO $
                   case tweet of
                     Left err -> privmsg chan err
                     Right t  -> privmsg chan (show t)
-  where
-    handleError :: SomeException -> IRC ()
-    handleError exc = do
-      liftIO $ print exc
-      privmsg chan "An error occured. Maybe the account is private?"
 eventListener _ = return ()
 
 quoteEventListener :: Message -> IRC ()
-quoteEventListener (Privmsg user' message chan) =
-    -- Hardcoded Username? Ewww. Change!
-    when ("!tweet " `isPrefixOf` message && user' == "uwap") $ do
-      let tweet = drop 1 $ dropWhile (/= ' ') message
+quoteEventListener (Privmsg user' message chan) = void $ liftBaseDiscard forkIO $ handle (handleError chan) $
+    -- Ewwww. Fixed channel and user? Change it!
+    when ("!tweet " `isPrefixOf` message && ((chan ^. name) == "#aspies" || user' == "uwap")) $ do
+      let tweet = drop 1 (dropWhile (/= ' ') message) ++ "\n\n~" ++ user'
       let requestBody' = urlEncodedBody [("status", lineUp tweet)]
       result <- authRequest "https://api.twitter.com/1.1/statuses/update.json" requestBody'
       case result of
