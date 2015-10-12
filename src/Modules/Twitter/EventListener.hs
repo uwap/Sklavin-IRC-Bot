@@ -8,7 +8,6 @@ import Core.IRC.Types
 import Core.IRC.Proto
 import Modules.Twitter.Auth
 import Modules.Twitter.Tweet hiding (name)
-
 import Network.HTTP.Conduit
 
 import Control.Lens
@@ -29,8 +28,12 @@ handleError chan exc = do
   privmsg chan "An error occured. Maybe you tried reading on a private account or writing something invalid?"
 
 eventListener :: Message -> IRC ()
-eventListener (Privmsg _ message chan) = void $ liftBaseDiscard forkIO $
-        handle (handleError chan) $ do
+eventListener (Privmsg _ message chan) = eventHandler message chan
+eventListener _ = return ()
+
+eventHandler :: String  -> Channel -> IRC ()
+eventHandler message chan = void $ liftBaseDiscard forkIO $
+        handle handleError $ do
           let ws = words message
           forM_ ws $ \w ->
             when ("http://twitter.com/" `isPrefixOf` w || "https://twitter.com/" `isPrefixOf` w) $ do
@@ -41,8 +44,14 @@ eventListener (Privmsg _ message chan) = void $ liftBaseDiscard forkIO $
                   tweet <- readTweet status_id
                   case tweet of
                     Left err -> privmsg chan err
-                    Right t  -> privmsg chan (show t)
-eventListener _ = return ()
+                    Right t  -> do
+                        privmsg chan (show t)
+                        eventHandler (show t) chan
+  where
+    handleError :: SomeException -> IRC ()
+    handleError exc = do
+      liftIO $ print exc
+      privmsg chan "An error occured. Maybe the account is private?"
 
 quoteEventListener :: Message -> IRC ()
 quoteEventListener (Privmsg user' message chan) = void $ liftBaseDiscard forkIO $ handle (handleError chan) $
