@@ -6,20 +6,19 @@ module Modules.Twitter.EventListener
 
 import Core.IRC.Types
 import Core.IRC.Proto
+import Core.IRC.Util
 import Modules.Twitter.Auth
 import Modules.Twitter.Tweet hiding (name)
 import Network.HTTP.Conduit
 
 import Control.Lens
-import Control.Concurrent
 import Control.Monad
 import Control.Monad.Catch (handle, SomeException)
 import Control.Monad.State (liftIO)
-import Control.Monad.Trans.Control (liftBaseDiscard)
 
 import Data.List
 import Data.Char
-import Data.List.Utils as U
+import qualified Data.List.Utils as U
 import Data.ByteString.Char8 (pack)
 
 handleError :: Channel -> SomeException -> IRC ()
@@ -31,30 +30,27 @@ eventListener :: Message -> IRC ()
 eventListener (Privmsg _ message chan) = eventHandler message chan
 eventListener _ = return ()
 
+containingStatusIDs :: String -> [String]
+containingStatusIDs message = 
+    let ws = words message in join $ ws & each %~ \url ->
+      guard ("http://twitter.com/" `isPrefixOf` url || "https://twitter.com/" `isPrefixOf` url) *> do
+        let suffix = dropWhile (/= '/') $ drop 1 $ dropWhile (/= '/') (drop 9 url)
+        let status_id = drop 8 suffix
+        guard ("/status/" `isPrefixOf` suffix && and (isNumber <$> status_id)) *>
+          return status_id
+
 eventHandler :: String  -> Channel -> IRC ()
-eventHandler message chan = void $ liftBaseDiscard forkIO $
-        handle handleError $ do
-          let ws = words message
-          forM_ ws $ \w ->
-            when ("http://twitter.com/" `isPrefixOf` w || "https://twitter.com/" `isPrefixOf` w) $ do
-              let suffix = dropWhile (/= '/') $ drop 1 $ dropWhile (/= '/') (drop 9 w)
-              when ("/status/" `isPrefixOf` suffix) $ do
-                let status_id = drop 8 suffix
-                when (and (isNumber <$> status_id)) $ do
-                  tweet <- readTweet status_id
-                  case tweet of
-                    Left err -> privmsg chan err
-                    Right t  -> do
-                        privmsg chan (show t)
-                        eventHandler (show t) chan
-  where
-    handleError :: SomeException -> IRC ()
-    handleError exc = do
-      liftIO $ print exc
-      privmsg chan "An error occured. Maybe the account is private?"
+eventHandler message chan = forkIRC_ . handle (handleError chan) $
+    sequence_ $ containingStatusIDs message & each %~ \status_id -> do
+      tweet <- readTweet status_id
+      case tweet of
+        Left err -> privmsg chan err
+        Right t  -> do
+          privmsg chan (show t)
+          eventHandler (show t) chan
 
 quoteEventListener :: Message -> IRC ()
-quoteEventListener (Privmsg user' message chan) = void $ liftBaseDiscard forkIO $ handle (handleError chan) $
+quoteEventListener (Privmsg user' message chan) = forkIRC_ . handle (handleError chan) $
     -- Ewwww. Fixed channel and user? Change it!
     when ("!tweet " `isPrefixOf` message && ((chan ^. name) == "#aspies" || user' == "uwap")) $ do
       let tweet = drop 1 (dropWhile (/= ' ') message) ++ "\n\n~" ++ user'
@@ -64,5 +60,5 @@ quoteEventListener (Privmsg user' message chan) = void $ liftBaseDiscard forkIO 
         Left err -> privmsg chan err
         Right _  -> privmsg chan "Tweeted!"
   where
-    lineUp = pack . U.join "\n<" . split "<"
+    lineUp = pack . U.join "\n<" . U.split "<"
 quoteEventListener _ = return ()
