@@ -25,7 +25,7 @@ data Tweet = Tweet { text :: !Text, user :: !TwitterUser, entities :: !TwitterEn
 instance FromJSON Tweet
 instance ToJSON Tweet
 instance Show Tweet where
-  show tweet = show (user tweet) ++ ": " ++ unpack (replaceUrls (urls (entities tweet)) (text tweet))
+  show tweet = show (user tweet) ++ ":\n" ++ unpack (replaceUrls (urls (entities tweet)) (text tweet))
 
 replaceUrls :: [TwitterUrl] -> Text -> Text
 replaceUrls [] t = t

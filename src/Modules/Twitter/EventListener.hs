@@ -35,8 +35,10 @@ containingStatusIDs message =
     let ws = words message in join $ ws & each %~ \url ->
       guard ("http://twitter.com/" `isPrefixOf` url || "https://twitter.com/" `isPrefixOf` url) *> do
         let suffix = dropWhile (/= '/') $ drop 1 $ dropWhile (/= '/') (drop 9 url)
-        let status_id = drop 8 suffix
-        guard ("/status/" `isPrefixOf` suffix && and (isNumber <$> status_id)) *>
+        let status_id = drop 1 . dropWhile (/= '/') . drop 1 $ suffix
+        guard (("/status/" `isPrefixOf` suffix
+            || "/statuses/" `isPrefixOf` suffix)
+            && and (isNumber <$> status_id)) *>
           return status_id
 
 eventHandler :: String  -> Channel -> IRC ()
@@ -46,7 +48,7 @@ eventHandler message chan = forkIRC_ . handle (handleError chan) $
       case tweet of
         Left err -> privmsg chan err
         Right t  -> do
-          privmsg chan (show t)
+          privmsg chan (printBox . lines $ show t)
           eventHandler (show t) chan
 
 quoteEventListener :: Message -> IRC ()
@@ -62,3 +64,22 @@ quoteEventListener (Privmsg user' message chan) = forkIRC_ . handle (handleError
   where
     lineUp = pack . U.join "\n<" . U.split "<"
 quoteEventListener _ = return ()
+
+printBox :: [String] -> String
+printBox (user:message) =
+    "+" ++ replicate 72 '-' ++ "+\n" ++
+    "+ \x0002" ++ take 70 user ++ replicate (70 - length user) ' ' ++ "\x000F +\n"
+    ++ printlines message ++
+    "+" ++ replicate 72 '-' ++ "+\n"
+  where
+    printlines [] = ""
+    printlines (x:xs) = do
+      let (t,r) = if length x > 70 then splitLastWord x else (x,"")
+      let prep = guard (not . and $ isSpace <$> t) *> "+ " ++ t ++ replicate (70 - length t) ' ' ++ " +\n"
+      prep ++ (if and (isSpace <$> r) then printlines xs
+                  else printlines (r:xs))
+                          
+    splitLastWord str = let rvsd = reverse $ take 70 str in
+                          ( reverse (dropWhile (not . isSpace) rvsd)
+                          , reverse (takeWhile (not . isSpace) rvsd) ++ drop 70 str
+                          )
